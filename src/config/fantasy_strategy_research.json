@@ -1,0 +1,213 @@
+{
+  "generated": "2025-08-18T21:13:14.876Z",
+  "strategies": [
+    {
+      "source": "FantasyPros",
+      "url": "https://www.fantasypros.com/2025/01/fantasy-football-draft-strategy/",
+      "strategy": "Zero RB Strategy",
+      "key_points": [
+        "Wait on RB, load up on elite WR/TE early",
+        "Target high-upside RBs in rounds 5-8",
+        "Works best in PPR formats",
+        "Reduces injury risk exposure"
+      ],
+      "verified": true
+    },
+    {
+      "source": "RotoWire",
+      "url": "https://www.rotowire.com/football/draft-strategy.php",
+      "strategy": "Robust RB",
+      "key_points": [
+        "Draft 2-3 RBs in first 4 rounds",
+        "RB scarcity is real in 2025",
+        "Target workhorse backs with 250+ touches",
+        "Best for standard scoring"
+      ],
+      "verified": true
+    },
+    {
+      "source": "ESPN",
+      "url": "https://www.espn.com/fantasy/football/story/_/id/38046782",
+      "strategy": "Hero RB",
+      "key_points": [
+        "One elite RB in round 1",
+        "Stack WRs rounds 2-5",
+        "Find RB2 value in rounds 6-9",
+        "Balance between Zero RB and Robust RB"
+      ],
+      "verified": true
+    },
+    {
+      "source": "Yahoo Fantasy",
+      "url": "https://football.fantasysports.yahoo.com/f1/draftstrategy",
+      "strategy": "Late Round QB",
+      "key_points": [
+        "Wait until round 7+ for QB",
+        "Target QBs with rushing upside",
+        "Stream QB position if needed",
+        "Allows loading up on RB/WR early"
+      ],
+      "verified": true
+    },
+    {
+      "source": "4for4",
+      "url": "https://www.4for4.com/2025/preseason/draft-strategy",
+      "strategy": "Anchor WR",
+      "key_points": [
+        "Elite WR in round 1 provides consistency",
+        "Target 2 WRs in first 3 rounds",
+        "WRs have lower injury risk than RBs",
+        "Best strategy for PPR leagues"
+      ],
+      "verified": true
+    }
+  ],
+  "position_strategies": [
+    {
+      "position": "QB",
+      "early_round_strategy": "Only if elite dual-threat (Allen, Hurts, Jackson)",
+      "mid_round_strategy": "Target high-upside QBs rounds 6-9",
+      "late_round_strategy": "Stream or take 2 late QBs",
+      "target_quantity": 1,
+      "key_metrics": [
+        "Passing yards",
+        "Passing TDs",
+        "Rushing yards",
+        "Rushing TDs"
+      ]
+    },
+    {
+      "position": "RB",
+      "early_round_strategy": "Target workhorse backs with 70%+ snap share",
+      "mid_round_strategy": "Look for committee leaders and pass-catchers",
+      "late_round_strategy": "Handcuffs and rookie lottery tickets",
+      "target_quantity": 5,
+      "key_metrics": [
+        "Touches",
+        "Targets",
+        "Red zone touches",
+        "Snap %"
+      ]
+    },
+    {
+      "position": "WR",
+      "early_round_strategy": "Elite target hogs (25%+ target share)",
+      "mid_round_strategy": "WR2s on good offenses",
+      "late_round_strategy": "Rookie WRs and slot receivers",
+      "target_quantity": 6,
+      "key_metrics": [
+        "Targets",
+        "Target share",
+        "Air yards",
+        "Red zone targets"
+      ]
+    },
+    {
+      "position": "TE",
+      "early_round_strategy": "Elite TE provides major advantage",
+      "mid_round_strategy": "Target breakout candidates",
+      "late_round_strategy": "Stream based on matchups",
+      "target_quantity": 1,
+      "key_metrics": [
+        "Targets",
+        "Target share",
+        "Red zone usage",
+        "Snap %"
+      ]
+    },
+    {
+      "position": "K",
+      "early_round_strategy": "Never draft early",
+      "mid_round_strategy": "Never draft mid",
+      "late_round_strategy": "Last 2 rounds only, target good offenses",
+      "target_quantity": 1,
+      "key_metrics": [
+        "Team scoring",
+        "Dome games",
+        "XP attempts"
+      ]
+    }
+  ],
+  "optimal_weights": {
+    "QB": {
+      "pps": 0.3,
+      "var": 0.25,
+      "con": 0.1,
+      "ups": 0.15,
+      "sos": 0.1,
+      "trd": 0.05,
+      "inj": 0.05
+    },
+    "RB": {
+      "pps": 0.2,
+      "var": 0.25,
+      "con": 0.15,
+      "ups": 0.1,
+      "sos": 0.1,
+      "trd": 0.1,
+      "inj": 0.1
+    },
+    "WR": {
+      "pps": 0.25,
+      "var": 0.2,
+      "con": 0.2,
+      "ups": 0.15,
+      "sos": 0.1,
+      "trd": 0.05,
+      "inj": 0.05
+    },
+    "TE": {
+      "pps": 0.25,
+      "var": 0.3,
+      "con": 0.15,
+      "ups": 0.15,
+      "sos": 0.08,
+      "trd": 0.05,
+      "inj": 0.02
+    },
+    "K": {
+      "pps": 0.35,
+      "var": 0.15,
+      "con": 0.2,
+      "ups": 0.1,
+      "sos": 0.15,
+      "trd": 0.03,
+      "inj": 0.02
+    }
+  },
+  "vbd_baselines": {
+    "QB": {
+      "baseline_rank": 12,
+      "expected_points": 280,
+      "premium_threshold": 350
+    },
+    "RB": {
+      "baseline_rank": 36,
+      "expected_points": 150,
+      "premium_threshold": 250
+    },
+    "WR": {
+      "baseline_rank": 36,
+      "expected_points": 140,
+      "premium_threshold": 250
+    },
+    "TE": {
+      "baseline_rank": 12,
+      "expected_points": 100,
+      "premium_threshold": 180
+    },
+    "K": {
+      "baseline_rank": 12,
+      "expected_points": 120,
+      "premium_threshold": 140
+    }
+  },
+  "sources": [
+    "https://www.fantasypros.com/nfl/",
+    "https://www.rotowire.com/football/",
+    "https://www.espn.com/fantasy/football/",
+    "https://football.fantasysports.yahoo.com/",
+    "https://www.cbssports.com/fantasy/football/",
+    "https://www.4for4.com/"
+  ]
+}

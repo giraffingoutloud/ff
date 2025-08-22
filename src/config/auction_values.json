@@ -1,0 +1,77 @@
+{
+  "generated": "2025-08-20",
+  "budget": 200,
+  "teams": 12,
+  "strategies": [
+    {
+      "source": "FantasyPros Consensus",
+      "strategy": "Balanced Build",
+      "key_principles": [
+        "Spend 65-70% of budget on starting lineup",
+        "Never spend more than 30% on one player",
+        "Target 2-3 elite players ($30+)",
+        "Fill bench with $1-3 players",
+        "Save $1 for each bench spot"
+      ],
+      "budget_allocation": {
+        "Starters": 140,
+        "Bench": 40,
+        "Reserve": 20
+      }
+    },
+    {
+      "source": "ESPN Strategy Guide",
+      "strategy": "Stars and Scrubs",
+      "key_principles": [
+        "Spend 80-85% on top 5 players",
+        "Get 2-3 elite RB/WR ($40-60 each)",
+        "Fill roster with $1 players",
+        "Dominate weekly with elite players",
+        "Work waiver wire for depth"
+      ],
+      "budget_allocation": {
+        "Elite (3 players)": 150,
+        "Mid-tier (3 players)": 30,
+        "Bargains (10 players)": 20
+      }
+    },
+    {
+      "source": "RotoWire Expert",
+      "strategy": "Value Based Spending",
+      "key_principles": [
+        "Calculate projected points above replacement",
+        "Spend proportional to VAR (Value Above Replacement)",
+        "Top RB worth $45-55 in 12-team",
+        "Top WR worth $40-50 in 12-team",
+        "Never pay more than $25 for QB",
+        "Never pay more than $20 for TE"
+      ],
+      "budget_allocation": {
+        "RB (5 players)": 80,
+        "WR (5 players)": 70,
+        "QB (1 player)": 15,
+        "TE (1 player)": 10,
+        "Flex/Bench": 25
+      }
+    },
+    {
+      "source": "Yahoo Fantasy Experts",
+      "strategy": "Position Scarcity Focus",
+      "key_principles": [
+        "Pay up for scarce positions (RB)",
+        "RB1s worth 25-30% of budget",
+        "Wait on QB unless elite dual-threat",
+        "Stream K/DST ($1 each)",
+        "Spend 60% on RB/WR core"
+      ],
+      "budget_allocation": {
+        "RB1": 50,
+        "RB2": 30,
+        "WR1": 35,
+        "WR2": 25,
+        "WR3": 15,
+        "Others": 45
+      }
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Force dark mode */
+:root {
+  color-scheme: dark;
+}
+
+html {
+  @apply dark;
+}
+
+@layer base {
+  body {
+    @apply bg-dark-bg text-dark-text m-0;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  
+  .dark body {
+    @apply bg-dark-bg text-dark-text;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-lg shadow-md p-4;
+  }
+  
+  .btn-primary {
+    @apply bg-draft-primary text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-semibold;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors;
+  }
+  
+  .btn-success {
+    @apply bg-draft-accent text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors;
+  }
+  
+  .btn-warning {
+    @apply bg-draft-warning text-white px-4 py-2 rounded-md hover:bg-amber-600 transition-colors;
+  }
+  
+  .input-field {
+    @apply border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-draft-primary;
+  }
+  
+  .stat-badge {
+    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium;
+  }
+}

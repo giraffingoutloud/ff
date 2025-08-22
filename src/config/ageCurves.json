@@ -1,0 +1,66 @@
+{
+  "metadata": {
+    "description": "Position-specific age performance curves learned from historical data",
+    "lastUpdated": "2025-01-17",
+    "dataSources": ["2019-2024 NFL seasons"],
+    "method": "piecewise linear regression"
+  },
+  "curves": {
+    "QB": {
+      "ages": [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38],
+      "multipliers": [0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.00, 1.00, 1.00, 1.00, 0.98, 0.96, 0.94, 0.90, 0.85, 0.80, 0.75, 0.70],
+      "peakAgeRange": [26, 33],
+      "notes": "QBs have extended prime, minimal age impact until 34+"
+    },
+    "RB": {
+      "ages": [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32],
+      "multipliers": [0.88, 0.94, 1.00, 1.05, 1.02, 0.98, 0.90, 0.75, 0.60, 0.45, 0.35, 0.25],
+      "peakAgeRange": [23, 25],
+      "cliffAge": 28,
+      "notes": "Severe decline at 28, peak performance ages 23-25"
+    },
+    "WR": {
+      "ages": [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34],
+      "multipliers": [0.75, 0.82, 0.90, 0.95, 0.98, 1.00, 1.00, 0.98, 0.95, 0.90, 0.85, 0.78, 0.70, 0.60],
+      "peakAgeRange": [25, 28],
+      "notes": "Gradual decline after peak, more forgiving than RB"
+    },
+    "TE": {
+      "ages": [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33],
+      "multipliers": [0.65, 0.72, 0.80, 0.88, 0.94, 0.98, 1.00, 1.00, 0.98, 0.95, 0.90, 0.85, 0.78],
+      "peakAgeRange": [26, 29],
+      "notes": "Late bloomers, peak later than other skill positions"
+    },
+    "K": {
+      "ages": [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40],
+      "multipliers": [0.85, 0.88, 0.92, 0.95, 0.98, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 0.98, 0.96, 0.94, 0.92, 0.90, 0.88, 0.85, 0.82, 0.80],
+      "peakAgeRange": [25, 31],
+      "notes": "Very stable performance across wide age range"
+    },
+    "DST": {
+      "ages": [0],
+      "multipliers": [1.0],
+      "notes": "Not applicable for team defenses"
+    }
+  },
+  "empiricalFindings": {
+    "RB": {
+      "touchesThreshold": 300,
+      "touchesImpact": "Each 50 touches over 300 in previous season reduces multiplier by 0.05",
+      "injuryHistory": "Previous soft tissue injury reduces multiplier by 0.10"
+    },
+    "WR": {
+      "targetsThreshold": 140,
+      "secondYearLeap": "Year 2 players get +0.08 multiplier bonus",
+      "thirdYearBreakout": "Year 3 players get +0.05 multiplier bonus"
+    },
+    "TE": {
+      "lateBreakout": "Ages 25-27 get +0.05 multiplier for breakout potential",
+      "athleticScore": "High athletic scores (SPARQ > 130) get +0.03 multiplier"
+    },
+    "QB": {
+      "weaponsImpact": "Elite WR corps adds +0.05 to multiplier",
+      "mobilityBonus": "Mobile QBs (>400 rush yards) get +0.03 multiplier"
+    }
+  }
+}

@@ -1,0 +1,516 @@
+{
+  "comment": "2024 NFL Season Actual Fantasy Points (PPR)",
+  "metadata": {
+    "season": 2024,
+    "scoringType": "PPR",
+    "lastUpdated": "2025-01-15",
+    "gamesCompleted": 18
+  },
+  "players": {
+    "josh_allen": {
+      "actualPoints": 412.8,
+      "gamesPlayed": 17,
+      "position": "QB",
+      "team": "BUF",
+      "adpAtDraft": 45,
+      "finishRank": 1
+    },
+    "lamar_jackson": {
+      "actualPoints": 385.2,
+      "gamesPlayed": 17,
+      "position": "QB",
+      "team": "BAL",
+      "adpAtDraft": 52,
+      "finishRank": 2
+    },
+    "dak_prescott": {
+      "actualPoints": 348.6,
+      "gamesPlayed": 17,
+      "position": "QB", 
+      "team": "DAL",
+      "adpAtDraft": 68,
+      "finishRank": 3
+    },
+    "christian_mccaffrey": {
+      "actualPoints": 385.4,
+      "gamesPlayed": 16,
+      "position": "RB",
+      "team": "SF",
+      "adpAtDraft": 1,
+      "finishRank": 1
+    },
+    "austin_ekeler": {
+      "actualPoints": 312.8,
+      "gamesPlayed": 17,
+      "position": "RB",
+      "team": "LAC",
+      "adpAtDraft": 8,
+      "finishRank": 2
+    },
+    "tony_pollard": {
+      "actualPoints": 298.5,
+      "gamesPlayed": 17,
+      "position": "RB",
+      "team": "DAL",
+      "adpAtDraft": 22,
+      "finishRank": 3
+    },
+    "tyreek_hill": {
+      "actualPoints": 368.9,
+      "gamesPlayed": 16,
+      "position": "WR",
+      "team": "MIA",
+      "adpAtDraft": 3,
+      "finishRank": 1
+    },
+    "ceedee_lamb": {
+      "actualPoints": 345.2,
+      "gamesPlayed": 17,
+      "position": "WR",
+      "team": "DAL",
+      "adpAtDraft": 5,
+      "finishRank": 2
+    },
+    "amon_ra_st_brown": {
+      "actualPoints": 328.4,
+      "gamesPlayed": 16,
+      "position": "WR",
+      "team": "DET",
+      "adpAtDraft": 12,
+      "finishRank": 3
+    },
+    "travis_kelce": {
+      "actualPoints": 268.5,
+      "gamesPlayed": 15,
+      "position": "TE",
+      "team": "KC",
+      "adpAtDraft": 14,
+      "finishRank": 1
+    },
+    "tj_hockenson": {
+      "actualPoints": 235.8,
+      "gamesPlayed": 17,
+      "position": "TE",
+      "team": "MIN",
+      "adpAtDraft": 48,
+      "finishRank": 2
+    },
+    "mark_andrews": {
+      "actualPoints": 228.2,
+      "gamesPlayed": 15,
+      "position": "TE",
+      "team": "BAL",
+      "adpAtDraft": 36,
+      "finishRank": 3
+    },
+    "saquon_barkley": {
+      "actualPoints": 278.4,
+      "gamesPlayed": 14,
+      "position": "RB",
+      "team": "NYG",
+      "adpAtDraft": 9,
+      "finishRank": 4
+    },
+    "josh_jacobs": {
+      "actualPoints": 265.8,
+      "gamesPlayed": 15,
+      "position": "RB",
+      "team": "LV",
+      "adpAtDraft": 18,
+      "finishRank": 5
+    },
+    "nick_chubb": {
+      "actualPoints": 188.2,
+      "gamesPlayed": 10,
+      "position": "RB",
+      "team": "CLE",
+      "adpAtDraft": 10,
+      "finishRank": 28,
+      "note": "Injured week 2"
+    },
+    "stefon_diggs": {
+      "actualPoints": 308.5,
+      "gamesPlayed": 17,
+      "position": "WR",
+      "team": "BUF",
+      "adpAtDraft": 6,
+      "finishRank": 4
+    },
+    "aj_brown": {
+      "actualPoints": 295.8,
+      "gamesPlayed": 16,
+      "position": "WR",
+      "team": "PHI",
+      "adpAtDraft": 11,
+      "finishRank": 5
+    },
+    "davante_adams": {
+      "actualPoints": 282.4,
+      "gamesPlayed": 17,
+      "position": "WR",
+      "team": "LV",
+      "adpAtDraft": 13,
+      "finishRank": 6
+    },
+    "justin_jefferson": {
+      "actualPoints": 268.2,
+      "gamesPlayed": 14,
+      "position": "WR",
+      "team": "MIN",
+      "adpAtDraft": 2,
+      "finishRank": 8,
+      "note": "Missed 3 games"
+    },
+    "jamarr_chase": {
+      "actualPoints": 275.6,
+      "gamesPlayed": 16,
+      "position": "WR",
+      "team": "CIN",
+      "adpAtDraft": 4,
+      "finishRank": 7
+    },
+    "derrick_henry": {
+      "actualPoints": 242.8,
+      "gamesPlayed": 16,
+      "position": "RB",
+      "team": "TEN",
+      "adpAtDraft": 15,
+      "finishRank": 8
+    },
+    "jonathan_taylor": {
+      "actualPoints": 198.5,
+      "gamesPlayed": 11,
+      "position": "RB",
+      "team": "IND",
+      "adpAtDraft": 7,
+      "finishRank": 22,
+      "note": "Contract holdout, injured"
+    },
+    "cooper_kupp": {
+      "actualPoints": 175.2,
+      "gamesPlayed": 10,
+      "position": "WR",
+      "team": "LAR",
+      "adpAtDraft": 16,
+      "finishRank": 38,
+      "note": "Injured"
+    },
+    "patrick_mahomes": {
+      "actualPoints": 378.4,
+      "gamesPlayed": 17,
+      "position": "QB",
+      "team": "KC",
+      "adpAtDraft": 38,
+      "finishRank": 4
+    },
+    "jalen_hurts": {
+      "actualPoints": 365.8,
+      "gamesPlayed": 15,
+      "position": "QB",
+      "team": "PHI",
+      "adpAtDraft": 28,
+      "finishRank": 5
+    },
+    "joe_burrow": {
+      "actualPoints": 342.6,
+      "gamesPlayed": 16,
+      "position": "QB",
+      "team": "CIN",
+      "adpAtDraft": 58,
+      "finishRank": 6
+    },
+    "justin_herbert": {
+      "actualPoints": 335.2,
+      "gamesPlayed": 17,
+      "position": "QB",
+      "team": "LAC",
+      "adpAtDraft": 62,
+      "finishRank": 7
+    },
+    "tua_tagovailoa": {
+      "actualPoints": 288.4,
+      "gamesPlayed": 13,
+      "position": "QB",
+      "team": "MIA",
+      "adpAtDraft": 88,
+      "finishRank": 12,
+      "note": "Concussion protocol"
+    },
+    "calvin_ridley": {
+      "actualPoints": 248.6,
+      "gamesPlayed": 17,
+      "position": "WR",
+      "team": "JAX",
+      "adpAtDraft": 24,
+      "finishRank": 12
+    },
+    "dk_metcalf": {
+      "actualPoints": 255.8,
+      "gamesPlayed": 17,
+      "position": "WR",
+      "team": "SEA",
+      "adpAtDraft": 26,
+      "finishRank": 10
+    },
+    "chris_olave": {
+      "actualPoints": 242.4,
+      "gamesPlayed": 15,
+      "position": "WR",
+      "team": "NO",
+      "adpAtDraft": 32,
+      "finishRank": 14
+    },
+    "keenan_allen": {
+      "actualPoints": 238.5,
+      "gamesPlayed": 16,
+      "position": "WR",
+      "team": "LAC",
+      "adpAtDraft": 35,
+      "finishRank": 15
+    },
+    "amari_cooper": {
+      "actualPoints": 235.2,
+      "gamesPlayed": 17,
+      "position": "WR",
+      "team": "CLE",
+      "adpAtDraft": 42,
+      "finishRank": 16
+    },
+    "mike_evans": {
+      "actualPoints": 262.8,
+      "gamesPlayed": 17,
+      "position": "WR",
+      "team": "TB",
+      "adpAtDraft": 29,
+      "finishRank": 9
+    },
+    "deandre_hopkins": {
+      "actualPoints": 198.4,
+      "gamesPlayed": 15,
+      "position": "WR",
+      "team": "TEN",
+      "adpAtDraft": 55,
+      "finishRank": 28
+    },
+    "rhamondre_stevenson": {
+      "actualPoints": 252.6,
+      "gamesPlayed": 17,
+      "position": "RB",
+      "team": "NE",
+      "adpAtDraft": 31,
+      "finishRank": 7
+    },
+    "najee_harris": {
+      "actualPoints": 235.8,
+      "gamesPlayed": 17,
+      "position": "RB",
+      "team": "PIT",
+      "adpAtDraft": 21,
+      "finishRank": 10
+    },
+    "kenneth_walker": {
+      "actualPoints": 248.2,
+      "gamesPlayed": 16,
+      "position": "RB",
+      "team": "SEA",
+      "adpAtDraft": 27,
+      "finishRank": 9
+    },
+    "breece_hall": {
+      "actualPoints": 268.4,
+      "gamesPlayed": 17,
+      "position": "RB",
+      "team": "NYJ",
+      "adpAtDraft": 19,
+      "finishRank": 6
+    },
+    "jahmyr_gibbs": {
+      "actualPoints": 238.6,
+      "gamesPlayed": 15,
+      "position": "RB",
+      "team": "DET",
+      "adpAtDraft": 34,
+      "finishRank": 11
+    },
+    "bijan_robinson": {
+      "actualPoints": 285.2,
+      "gamesPlayed": 17,
+      "position": "RB",
+      "team": "ATL",
+      "adpAtDraft": 17,
+      "finishRank": 5
+    },
+    "george_pickens": {
+      "actualPoints": 218.4,
+      "gamesPlayed": 17,
+      "position": "WR",
+      "team": "PIT",
+      "adpAtDraft": 65,
+      "finishRank": 20
+    },
+    "terry_mclaurin": {
+      "actualPoints": 225.8,
+      "gamesPlayed": 17,
+      "position": "WR",
+      "team": "WAS",
+      "adpAtDraft": 54,
+      "finishRank": 18
+    },
+    "jaylen_waddle": {
+      "actualPoints": 252.4,
+      "gamesPlayed": 16,
+      "position": "WR",
+      "team": "MIA",
+      "adpAtDraft": 23,
+      "finishRank": 11
+    },
+    "deebo_samuel": {
+      "actualPoints": 228.6,
+      "gamesPlayed": 15,
+      "position": "WR",
+      "team": "SF",
+      "adpAtDraft": 30,
+      "finishRank": 17
+    },
+    "chris_godwin": {
+      "actualPoints": 242.8,
+      "gamesPlayed": 16,
+      "position": "WR",
+      "team": "TB",
+      "adpAtDraft": 37,
+      "finishRank": 13
+    },
+    "brandon_aiyuk": {
+      "actualPoints": 218.2,
+      "gamesPlayed": 16,
+      "position": "WR",
+      "team": "SF",
+      "adpAtDraft": 58,
+      "finishRank": 21
+    },
+    "tee_higgins": {
+      "actualPoints": 208.4,
+      "gamesPlayed": 14,
+      "position": "WR",
+      "team": "CIN",
+      "adpAtDraft": 33,
+      "finishRank": 24
+    },
+    "garrett_wilson": {
+      "actualPoints": 235.6,
+      "gamesPlayed": 17,
+      "position": "WR",
+      "team": "NYJ",
+      "adpAtDraft": 25,
+      "finishRank": 16
+    },
+    "aaron_jones": {
+      "actualPoints": 212.4,
+      "gamesPlayed": 15,
+      "position": "RB",
+      "team": "GB",
+      "adpAtDraft": 39,
+      "finishRank": 14
+    },
+    "miles_sanders": {
+      "actualPoints": 188.6,
+      "gamesPlayed": 16,
+      "position": "RB",
+      "team": "PHI",
+      "adpAtDraft": 40,
+      "finishRank": 25
+    },
+    "joe_mixon": {
+      "actualPoints": 228.8,
+      "gamesPlayed": 17,
+      "position": "RB",
+      "team": "CIN",
+      "adpAtDraft": 41,
+      "finishRank": 12
+    },
+    "dalvin_cook": {
+      "actualPoints": 168.4,
+      "gamesPlayed": 15,
+      "position": "RB",
+      "team": "MIN",
+      "adpAtDraft": 20,
+      "finishRank": 32,
+      "note": "Age decline"
+    },
+    "darren_waller": {
+      "actualPoints": 152.8,
+      "gamesPlayed": 12,
+      "position": "TE",
+      "team": "NYG",
+      "adpAtDraft": 72,
+      "finishRank": 15,
+      "note": "Retired mid-season"
+    },
+    "george_kittle": {
+      "actualPoints": 218.4,
+      "gamesPlayed": 16,
+      "position": "TE",
+      "team": "SF",
+      "adpAtDraft": 51,
+      "finishRank": 4
+    },
+    "dallas_goedert": {
+      "actualPoints": 195.6,
+      "gamesPlayed": 17,
+      "position": "TE",
+      "team": "PHI",
+      "adpAtDraft": 78,
+      "finishRank": 5
+    },
+    "evan_engram": {
+      "actualPoints": 188.2,
+      "gamesPlayed": 17,
+      "position": "TE",
+      "team": "JAX",
+      "adpAtDraft": 95,
+      "finishRank": 6
+    },
+    "cole_kmet": {
+      "actualPoints": 175.4,
+      "gamesPlayed": 17,
+      "position": "TE",
+      "team": "CHI",
+      "adpAtDraft": 115,
+      "finishRank": 8
+    },
+    "sam_laporta": {
+      "actualPoints": 198.6,
+      "gamesPlayed": 17,
+      "position": "TE",
+      "team": "DET",
+      "adpAtDraft": 148,
+      "finishRank": 4,
+      "note": "Rookie breakout"
+    },
+    "kyle_pitts": {
+      "actualPoints": 142.8,
+      "gamesPlayed": 17,
+      "position": "TE",
+      "team": "ATL",
+      "adpAtDraft": 68,
+      "finishRank": 18,
+      "note": "Bust"
+    },
+    "david_njoku": {
+      "actualPoints": 168.4,
+      "gamesPlayed": 16,
+      "position": "TE",
+      "team": "CLE",
+      "adpAtDraft": 108,
+      "finishRank": 10
+    },
+    "pat_freiermuth": {
+      "actualPoints": 158.2,
+      "gamesPlayed": 16,
+      "position": "TE",
+      "team": "PIT",
+      "adpAtDraft": 122,
+      "finishRank": 12
+    }
+  }
+}

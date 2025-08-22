@@ -1,0 +1,165 @@
+{
+  "metadata": {
+    "season": 2025,
+    "lastUpdated": "2025-01-17",
+    "description": "Strength of Schedule data based on defensive rankings vs positions",
+    "source": "Historical defensive performance data"
+  },
+  "teamSchedules": {
+    "ARI": {
+      "opponents": ["BUF", "LAR", "DET", "WAS", "SF", "GB", "LAC", "MIA", "BUF", "MIN", "SEA", "NE", "CAR", "LAR", "SF", "SEA", "CAR"],
+      "byeWeek": 11
+    },
+    "ATL": {
+      "opponents": ["CAR", "PHI", "KC", "NO", "TB", "CAR", "SEA", "TB", "DAL", "NO", "DEN", "LV", "MIN", "WAS", "NYG", "CAR", "NO"],
+      "byeWeek": 9
+    },
+    "BAL": {
+      "opponents": ["KC", "LV", "DAL", "BUF", "CIN", "WAS", "TB", "CLE", "DEN", "CIN", "PIT", "LAC", "PHI", "NYG", "PIT", "HOU", "CLE"],
+      "byeWeek": 10
+    },
+    "BUF": {
+      "opponents": ["ARI", "MIA", "JAX", "BAL", "HOU", "NYJ", "TEN", "SEA", "ARI", "IND", "SF", "LAR", "DET", "NE", "NYJ", "MIA", "NE"],
+      "byeWeek": 7
+    },
+    "CAR": {
+      "opponents": ["ATL", "LAC", "LV", "CIN", "CHI", "ATL", "WAS", "DEN", "NO", "NYG", "TB", "PHI", "ARI", "DAL", "TB", "ATL", "ARI"],
+      "byeWeek": 13
+    },
+    "CHI": {
+      "opponents": ["GB", "HOU", "IND", "LAR", "CAR", "JAX", "WAS", "MIN", "ARI", "NE", "GB", "MIN", "DET", "SF", "MIN", "GB", "DET"],
+      "byeWeek": 10
+    },
+    "CIN": {
+      "opponents": ["NE", "KC", "WAS", "CAR", "BAL", "NYG", "CLE", "PHI", "LV", "BAL", "LAC", "PIT", "DAL", "TEN", "CLE", "DEN", "PIT"],
+      "byeWeek": 9
+    },
+    "CLE": {
+      "opponents": ["DAL", "JAX", "NYG", "LV", "WAS", "PHI", "CIN", "BAL", "LAC", "NO", "PIT", "DEN", "PIT", "KC", "CIN", "MIA", "BAL"],
+      "byeWeek": 12
+    },
+    "DAL": {
+      "opponents": ["CLE", "NO", "BAL", "NYG", "PIT", "DET", "SF", "ATL", "PHI", "HOU", "WAS", "NYG", "CIN", "CAR", "TB", "PHI", "WAS"],
+      "byeWeek": 6
+    },
+    "DEN": {
+      "opponents": ["SEA", "PIT", "TB", "NYJ", "LV", "NE", "KC", "CAR", "BAL", "KC", "ATL", "CLE", "HOU", "LAC", "LA", "CIN", "KC"],
+      "byeWeek": 14
+    },
+    "DET": {
+      "opponents": ["LAR", "TB", "ARI", "SEA", "BYE", "DAL", "MIN", "TEN", "GB", "HOU", "JAX", "GB", "CHI", "BUF", "CHI", "SF", "MIN"],
+      "byeWeek": 5
+    },
+    "GB": {
+      "opponents": ["CHI", "IND", "TEN", "MIN", "LAR", "ARI", "HOU", "JAX", "DET", "CHI", "CHI", "DET", "KC", "SEA", "NO", "CHI", "MIN"],
+      "byeWeek": 10
+    },
+    "HOU": {
+      "opponents": ["IND", "CHI", "MIN", "JAX", "BUF", "NE", "GB", "IND", "NYJ", "DET", "DAL", "TEN", "DEN", "JAX", "MIA", "BAL", "TEN"],
+      "byeWeek": 14
+    },
+    "IND": {
+      "opponents": ["HOU", "GB", "CHI", "PIT", "JAX", "TEN", "MIA", "HOU", "MIN", "BUF", "NYJ", "NE", "LV", "NYJ", "TEN", "NYG", "JAX"],
+      "byeWeek": 14
+    },
+    "JAX": {
+      "opponents": ["MIA", "CLE", "BUF", "HOU", "IND", "CHI", "NE", "GB", "PHI", "MIN", "DET", "TEN", "NYJ", "HOU", "LV", "TEN", "IND"],
+      "byeWeek": 12
+    },
+    "KC": {
+      "opponents": ["BAL", "CIN", "ATL", "LAC", "NO", "SF", "DEN", "LV", "TB", "DEN", "BUF", "CAR", "GB", "CLE", "MIA", "LAC", "DEN"],
+      "byeWeek": 6
+    },
+    "LAC": {
+      "opponents": ["LV", "CAR", "PIT", "KC", "NO", "DAL", "ARI", "BYE", "CLE", "TEN", "CIN", "BAL", "NE", "DEN", "TB", "KC", "LV"],
+      "byeWeek": 8
+    },
+    "LAR": {
+      "opponents": ["DET", "ARI", "SF", "CHI", "GB", "LV", "MIN", "MIA", "NE", "PHI", "NO", "BUF", "SF", "ARI", "NYJ", "SEA", "SEA"],
+      "byeWeek": 9
+    },
+    "LV": {
+      "opponents": ["LAC", "BAL", "CAR", "CLE", "DEN", "LAR", "PIT", "KC", "CIN", "MIA", "DEN", "ATL", "IND", "TB", "JAX", "NO", "LAC"],
+      "byeWeek": 10
+    },
+    "MIA": {
+      "opponents": ["JAX", "BUF", "SEA", "TEN", "NE", "IND", "ARI", "LAR", "LV", "NYJ", "GB", "NYJ", "HOU", "SF", "KC", "CLE", "BUF"],
+      "byeWeek": 11
+    },
+    "MIN": {
+      "opponents": ["NYG", "SF", "HOU", "GB", "NYJ", "BYE", "DET", "CHI", "IND", "ARI", "JAX", "CHI", "ATL", "SEA", "CHI", "GB", "DET"],
+      "byeWeek": 6
+    },
+    "NE": {
+      "opponents": ["CIN", "SEA", "NYJ", "SF", "MIA", "DEN", "JAX", "TEN", "LAR", "CHI", "LAR", "IND", "LAC", "BUF", "ARI", "BUF", "NYJ"],
+      "byeWeek": 14
+    },
+    "NO": {
+      "opponents": ["TEN", "DAL", "PHI", "ATL", "KC", "TB", "BYE", "LAC", "CAR", "CLE", "LAR", "NYG", "WAS", "GB", "LV", "NYG", "ATL"],
+      "byeWeek": 7
+    },
+    "NYG": {
+      "opponents": ["MIN", "WAS", "CLE", "DAL", "SEA", "CIN", "PHI", "PIT", "WAS", "CAR", "TB", "DAL", "NO", "BAL", "ATL", "IND", "PHI"],
+      "byeWeek": 11
+    },
+    "NYJ": {
+      "opponents": ["SF", "TEN", "NE", "DEN", "MIN", "BUF", "PIT", "NE", "HOU", "MIA", "IND", "MIA", "JAX", "IND", "LAR", "BUF", "NE"],
+      "byeWeek": 12
+    },
+    "PHI": {
+      "opponents": ["GB", "ATL", "NO", "TB", "WAS", "CLE", "NYG", "CIN", "DAL", "LAR", "BYE", "CAR", "BAL", "PIT", "WAS", "DAL", "NYG"],
+      "byeWeek": 11
+    },
+    "PIT": {
+      "opponents": ["SF", "DEN", "LAC", "IND", "DAL", "LV", "NYJ", "NYG", "TEN", "WAS", "CLE", "CIN", "CLE", "PHI", "BAL", "KC", "CIN"],
+      "byeWeek": 9
+    },
+    "SEA": {
+      "opponents": ["DEN", "NE", "MIA", "DET", "NYG", "SF", "ATL", "BUF", "LAR", "SF", "ARI", "GB", "NYJ", "MIN", "CHI", "LAR", "LAR"],
+      "byeWeek": 10
+    },
+    "SF": {
+      "opponents": ["NYJ", "MIN", "LAR", "NE", "ARI", "SEA", "DAL", "BYE", "TB", "SEA", "BUF", "CHI", "LAR", "MIA", "DET", "ARI", "WAS"],
+      "byeWeek": 8
+    },
+    "TB": {
+      "opponents": ["WAS", "DET", "DEN", "PHI", "ATL", "NO", "BAL", "ATL", "KC", "SF", "NYG", "CAR", "LV", "LAC", "DAL", "CAR", "NO"],
+      "byeWeek": 5
+    },
+    "TEN": {
+      "opponents": ["NO", "NYJ", "GB", "MIA", "BUF", "IND", "BUF", "DET", "PIT", "LAC", "CIN", "JAX", "HOU", "CIN", "IND", "JAX", "HOU"],
+      "byeWeek": 13
+    },
+    "WAS": {
+      "opponents": ["TB", "NYG", "CIN", "ARI", "PHI", "BAL", "CAR", "CHI", "NYG", "PIT", "DAL", "BYE", "NO", "ATL", "PHI", "DAL", "SF"],
+      "byeWeek": 12
+    }
+  },
+  "defenseRankings": {
+    "vsQB": {
+      "SF": 1, "BAL": 2, "BUF": 3, "DAL": 4, "NE": 5, "DEN": 6, "PIT": 7, "CLE": 8,
+      "NYJ": 9, "PHI": 10, "KC": 11, "LAC": 12, "MIN": 13, "GB": 14, "NO": 15, "CIN": 16,
+      "MIA": 17, "TB": 18, "CHI": 19, "SEA": 20, "IND": 21, "TEN": 22, "JAX": 23, "LV": 24,
+      "LAR": 25, "HOU": 26, "NYG": 27, "WAS": 28, "ARI": 29, "DET": 30, "ATL": 31, "CAR": 32
+    },
+    "vsRB": {
+      "SF": 1, "BAL": 2, "TB": 3, "NYJ": 4, "DEN": 5, "PHI": 6, "BUF": 7, "PIT": 8,
+      "MIN": 9, "CLE": 10, "NO": 11, "KC": 12, "LAC": 13, "DAL": 14, "NE": 15, "GB": 16,
+      "MIA": 17, "CIN": 18, "CHI": 19, "IND": 20, "SEA": 21, "LAR": 22, "TEN": 23, "JAX": 24,
+      "HOU": 25, "LV": 26, "WAS": 27, "NYG": 28, "ATL": 29, "ARI": 30, "DET": 31, "CAR": 32
+    },
+    "vsWR": {
+      "NE": 1, "BUF": 2, "SF": 3, "DEN": 4, "BAL": 5, "NYJ": 6, "DAL": 7, "KC": 8,
+      "LAC": 9, "PIT": 10, "PHI": 11, "MIN": 12, "CLE": 13, "GB": 14, "CIN": 15, "TB": 16,
+      "NO": 17, "MIA": 18, "CHI": 19, "SEA": 20, "IND": 21, "LAR": 22, "TEN": 23, "JAX": 24,
+      "HOU": 25, "NYG": 26, "LV": 27, "WAS": 28, "ATL": 29, "ARI": 30, "CAR": 31, "DET": 32
+    },
+    "vsTE": {
+      "BAL": 1, "SF": 2, "BUF": 3, "NE": 4, "PIT": 5, "DEN": 6, "PHI": 7, "DAL": 8,
+      "NYJ": 9, "KC": 10, "MIN": 11, "LAC": 12, "CLE": 13, "GB": 14, "NO": 15, "CIN": 16,
+      "TB": 17, "MIA": 18, "CHI": 19, "SEA": 20, "IND": 21, "LAR": 22, "TEN": 23, "JAX": 24,
+      "HOU": 25, "LV": 26, "NYG": 27, "WAS": 28, "ATL": 29, "ARI": 30, "DET": 31, "CAR": 32
+    }
+  },
+  "playerSOS": {}
+}
