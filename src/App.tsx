@@ -32,7 +32,7 @@ import { dynamicCVSCalculator } from './services/dynamicCVSCalculator';
 import { ExtendedPlayer, pprAnalyzer } from './services/pprAnalyzer';
 import { advancedMetricsService } from './services/advancedMetricsService';
 import { auctionMarketTracker, MarketConditions, PositionMarket } from './services/auctionMarketTracker';
-import { Player, Position } from './types';
+import { Player, Position, Team } from './types';
 import { dataValidator } from './services/dataValidator';
 import { hallucinationDetector } from './services/hallucinationDetector';
 import { dataProvenanceChecker } from './services/dataProvenanceChecker';
@@ -55,7 +55,7 @@ const DraggableModal: React.FC<{
   onClose: () => void;
   title: string;
 }> = ({ children, onClose, title }) => {
-  const [position, setPosition] = useState({ x: window.innerWidth / 2 - (title === 'My Team' ? 350 : title === 'Data Quality Report' ? 225 : title === 'Draft Player' ? 350 : title === 'Player Comparison' ? 450 : 250), y: 50 });
+  const [position, setPosition] = useState({ x: window.innerWidth / 2 - (title === 'My Team' ? 350 : title === 'Data Quality Report' ? 175 : title === 'Draft Player' ? 350 : title === 'Player Comparison' ? 450 : 250), y: 50 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const modalRef = useRef<HTMLDivElement>(null);
@@ -109,7 +109,7 @@ const DraggableModal: React.FC<{
         exit={{ scale: 0.9, opacity: 0 }}
         className={`absolute bg-dark-bg-secondary rounded-xl overflow-hidden border border-dark-border pointer-events-auto shadow-2xl ${
           title === 'My Team' ? 'w-[700px] h-[95vh]' : 
-          title === 'Data Quality Report' ? 'w-[450px] max-h-[85vh]' : 
+          title === 'Data Quality Report' ? 'w-[350px] max-h-[85vh]' : 
           title === 'Draft Player' ? 'w-[700px] max-h-[85vh]' :
           title === 'Player Comparison' ? 'w-[900px] max-h-[85vh]' :
           'w-[500px] max-h-[85vh]'
@@ -177,7 +177,6 @@ export function App() {
   const [displayCount, setDisplayCount] = useState(75);
   const [selectedForComparison, setSelectedForComparison] = useState<Set<string>>(new Set());
   const [showComparisonModal, setShowComparisonModal] = useState(false);
-  const [showTeamCommandCenter, setShowTeamCommandCenter] = useState(false);
   const [selectedBadges, setSelectedBadges] = useState<Set<string>>(new Set());
   const [draftPriceModal, setDraftPriceModal] = useState<{ 
     player: ModernExtendedPlayer | null, 
@@ -551,7 +550,7 @@ export function App() {
   const playerHasBadge = (player: ModernExtendedPlayer, badge: string): boolean => {
     switch(badge) {
       case 'overvalued':
-        return player.auctionValue >= 10 && player.cvsScore < (player.auctionValue * 2.5);
+        return (player.auctionValue ?? 0) >= 10 && player.cvsScore < ((player.auctionValue ?? 0) * 2.5);
       case 'sleeper':
         return player.adp > 100 && player.adp < 200 && player.projectedPoints > 120;
       case 'hot':
@@ -811,13 +810,6 @@ export function App() {
                     viewMode === 'grid' ? 'bg-draft-primary text-white' : 'text-dark-text-secondary'
                   }`}
                 >
-                  <Grid className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setShowTeamCommandCenter(true)}
-                  className="p-2 rounded-md transition-colors text-dark-text-secondary hover:bg-draft-primary hover:text-white"
-                  title="My Team"
-                >
                   <Users className="w-4 h-4" />
                 </button>
               </div>
@@ -879,7 +871,7 @@ export function App() {
                     { pos: 'K', needed: 1 },
                     { pos: 'DST', needed: 1 }
                   ].map(({ pos, needed }) => {
-                      let players, count;
+                      let players: any[] = [], count: number;
                       if (pos === 'FLEX') {
                         // Simplified FLEX calculation
                         players = [];
@@ -1002,36 +994,10 @@ export function App() {
               {/* Player Cards */}
               {viewMode === 'grid' ? (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <AnimatePresence mode="wait">
-                      {sortedPlayers.slice(0, displayCount).map(player => (
-                      <motion.div
-                        key={player.id}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <AdvancedPlayerCard
-                          player={player}
-                          marketValue={player.auctionValue}
-                          onDraft={() => handleDraftPlayer(player)}
-                          onDetail={() => handlePlayerDetail(player)}
-                        />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-                {sortedPlayers.length > displayCount && (
-                  <div className="mt-4">
-                    <button
-                      onClick={() => setDisplayCount(prev => prev + 30)}
-                      className="w-full bg-dark-bg-secondary hover:bg-dark-bg-tertiary text-dark-text font-medium py-2 px-4 rounded-lg border border-dark-border transition-colors"
-                    >
-                      Load More ({sortedPlayers.length - displayCount} remaining)
-                    </button>
+                  {/* Grid view content placeholder - ready for new content */}
+                  <div className="flex items-center justify-center h-96 bg-dark-bg-secondary rounded-xl border border-dark-border">
+                    <p className="text-dark-text-secondary">Grid view content will go here</p>
                   </div>
-                )}
                 </>
               ) : (
                 <div className="bg-dark-bg-secondary rounded-xl border border-dark-border overflow-hidden">
@@ -1456,22 +1422,22 @@ export function App() {
                         </th>
                         <th 
                           className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8"
-                          onClick={() => handleSort('byeWeek')}
+                          onClick={() => handleSort('experience')}
                         >
                           <div className="flex items-center justify-center gap-1">
-                            <span className="cursor-help" title="Bye week for planning purposes">Bye</span>
-                            {sortColumn === 'byeWeek' ? (
+                            <span className="cursor-help" title="Years of NFL experience">Exp</span>
+                            {sortColumn === 'experience' ? (
                               sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
                         </th>
                         <th 
                           className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8"
-                          onClick={() => handleSort('experience')}
+                          onClick={() => handleSort('byeWeek')}
                         >
                           <div className="flex items-center justify-center gap-1">
-                            <span className="cursor-help" title="Years of NFL experience">Exp</span>
-                            {sortColumn === 'experience' ? (
+                            <span className="cursor-help" title="Bye week for planning purposes">Bye</span>
+                            {sortColumn === 'byeWeek' ? (
                               sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
@@ -1565,13 +1531,13 @@ export function App() {
                                   <span className="text-[9px] px-0.5 py-0 bg-emerald-500/20 text-emerald-400 rounded font-bold cursor-help" title="Value Pick - ADP > 36 with high points (QB>240, RB>180, WR>200, TE>140)">💰</span>
                                 )}
                                 {/* Overvalued Badge (High price but CVS doesn't justify it) */}
-                                {player.auctionValue >= 10 && (
+                                {(player.auctionValue ?? 0) >= 10 && (
                                   // Very lenient: CVS should be at least 2.5x the auction price
                                   // For $10: CVS 25+, $20: CVS 50+, $30: CVS 75+
-                                  player.cvsScore < (player.auctionValue * 2.5)
+                                  player.cvsScore < ((player.auctionValue ?? 0) * 2.5)
                                 ) && (
                                   <span className="text-[9px] px-0.5 py-0 bg-red-600/20 text-red-500 rounded font-bold cursor-help" 
-                                        title={`Overvalued - $${player.auctionValue} price but CVS ${player.cvsScore.toFixed(1)} (expected ${Math.round(player.auctionValue * 2.5)}+)`}>
+                                        title={`Overvalued - $${player.auctionValue} price but CVS ${player.cvsScore.toFixed(1)} (expected ${Math.round((player.auctionValue ?? 0) * 2.5)}+)`}>
                                     📉
                                   </span>
                                 )}
@@ -1655,6 +1621,7 @@ export function App() {
                             {getAdpRoundRange(player.adp)}
                           </td>
                           <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text-secondary w-8">{player.age}</td>
+                          <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text-secondary w-8">{player.experience || 0}</td>
                           <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text-secondary w-8">
                             <span className={`${
                               player.byeWeek === 5 || player.byeWeek === 6 || player.byeWeek === 7 || player.byeWeek === 9 ? 'text-orange-400' :
@@ -1664,7 +1631,6 @@ export function App() {
                               {player.byeWeek || player.bye || '-'}
                             </span>
                           </td>
-                          <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text-secondary w-8">{player.experience || 0}</td>
                           <td className="text-center px-0.5 py-0.5 w-10">
                             {player.sos !== undefined && player.sos !== null ? (
                               <div className={`inline-block w-7 h-5 rounded text-[11px] font-bold flex items-center justify-center ${
@@ -2087,19 +2053,19 @@ export function App() {
                   </div>
 
                   {/* Simple PPR Stats */}
-                  {draftPriceModal.player.receptions > 0 && (
+                  {(draftPriceModal.player.receptions ?? 0) > 0 && (
                     <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
                       <div className="space-y-1">
                         <div className="flex justify-between">
                           <span className="text-[10px] text-dark-text-secondary">Receptions</span>
                           <span className="text-xs font-bold text-purple-400">
-                            {Math.round(draftPriceModal.player.receptions)}
+                            {Math.round(draftPriceModal.player.receptions ?? 0)}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-[10px] text-dark-text-secondary">PPR Bonus</span>
                           <span className="text-xs font-bold text-purple-400">
-                            +{Math.round(draftPriceModal.player.receptions)} pts
+                            +{Math.round(draftPriceModal.player.receptions ?? 0)} pts
                           </span>
                         </div>
                       </div>
@@ -2290,11 +2256,11 @@ export function App() {
                     </div>
 
                     {/* Target Share */}
-                    {draftPriceModal.player.targets > 0 && (
+                    {(draftPriceModal.player.targets ?? 0) > 0 && (
                       <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
                         <div className="text-[10px] text-dark-text-secondary mb-1">Target Share</div>
                         <div className="text-sm font-bold text-purple-400">
-                          {Math.round((draftPriceModal.player.targets / 550) * 100)}%
+                          {Math.round(((draftPriceModal.player.targets ?? 0) / 550) * 100)}%
                         </div>
                         <div className="text-[9px] text-dark-text-secondary">
                           {draftPriceModal.player.targets} targets
@@ -2303,11 +2269,11 @@ export function App() {
                     )}
 
                     {/* Catch Rate */}
-                    {draftPriceModal.player.targets > 0 && (
+                    {(draftPriceModal.player.targets ?? 0) > 0 && (
                       <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
                         <div className="text-[10px] text-dark-text-secondary mb-1">Catch Rate</div>
                         <div className="text-sm font-bold text-green-400">
-                          {Math.round((draftPriceModal.player.receptions / draftPriceModal.player.targets) * 100)}%
+                          {Math.round(((draftPriceModal.player.receptions ?? 0) / (draftPriceModal.player.targets ?? 1)) * 100)}%
                         </div>
                         <div className="text-[9px] text-dark-text-secondary">
                           {draftPriceModal.player.receptions}/{draftPriceModal.player.targets}
@@ -2331,11 +2297,11 @@ export function App() {
                     </div>
 
                     {/* YPC/YPR */}
-                    {draftPriceModal.player.position === 'RB' && draftPriceModal.player.rushAttempts > 0 && (
+                    {draftPriceModal.player.position === 'RB' && (draftPriceModal.player.rushAttempts ?? 0) > 0 && (
                       <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
                         <div className="text-[10px] text-dark-text-secondary mb-1">Yards/Carry</div>
                         <div className="text-sm font-bold text-blue-400">
-                          {Math.round(draftPriceModal.player.rushYards / draftPriceModal.player.rushAttempts)}
+                          {Math.round((draftPriceModal.player.rushYards ?? 0) / (draftPriceModal.player.rushAttempts ?? 1))}
                         </div>
                         <div className="text-[9px] text-dark-text-secondary">
                           {draftPriceModal.player.rushYards} yards
@@ -2343,11 +2309,11 @@ export function App() {
                       </div>
                     )}
 
-                    {(draftPriceModal.player.position === 'WR' || draftPriceModal.player.position === 'TE') && draftPriceModal.player.receptions > 0 && (
+                    {(draftPriceModal.player.position === 'WR' || draftPriceModal.player.position === 'TE') && (draftPriceModal.player.receptions ?? 0) > 0 && (
                       <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
                         <div className="text-[10px] text-dark-text-secondary mb-1">Yards/Rec</div>
                         <div className="text-sm font-bold text-blue-400">
-                          {Math.round(draftPriceModal.player.receivingYards / draftPriceModal.player.receptions)}
+                          {Math.round((draftPriceModal.player.receivingYards ?? 0) / (draftPriceModal.player.receptions ?? 1))}
                         </div>
                         <div className="text-[9px] text-dark-text-secondary">
                           {draftPriceModal.player.receivingYards} yards
@@ -2699,17 +2665,6 @@ export function App() {
         </DraggableModal>
       )}
 
-      {/* Team Command Center Modal - Draggable */}
-      <AnimatePresence>
-        {showTeamCommandCenter && (
-          <DraggableModal
-            onClose={() => setShowTeamCommandCenter(false)}
-            title="My Team"
-          >
-            <TeamCommandCenter teamId="my-team" totalBudget={200} />
-          </DraggableModal>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

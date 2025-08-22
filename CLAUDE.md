@@ -1,10 +1,103 @@
 # NFL Fantasy Football Auction Draft and Weekly Roster Optimization Tool - Project Documentation - 2025-2026 NFL SEASON - FOR ESPN FANTASY FOOTBALL 12 PERSON PPR AUCTION DRAFT LEAGUE
 
-## CRITICAL: For AI Assistants, Large Language Models:
+# PROJECT PURPOSE: The purpose of this tool is to assist the user in drafting the optimal fantasy team during an auction draft at the beginning of the season, and in rostering the optimal team each week during the season (currently only the former feature is implemented).
 
-# PROJECT PURPOSE: The purpose of this tool is to assist the user in drafting the optimal fantasy team during an auction draft at the beginning of the season, and in rostering the optimal team each week during the season (currently only the former feature is implemented). To this end, it is imperative that the tool use only real, verified data from canonical_data (C:\Users\giraf\Documents\projects\ff\canonical_data) and Sleeper API, rather than estimations or guesses, in order to maximize the accuracy of this tool's recommendations. Only use Sleeper API for updates on injury status and other news. For everything else such as names, historical statistics, projections, ADP, the only source of truth is data from canonical_data.
+To this end, it is imperative that the tool use only real, verified data from canonical_data (C:\Users\giraf\Documents\projects\ff\canonical_data) and Sleeper API, rather than estimations or guesses, in order to maximize the accuracy of this tool's recommendations. Only use Sleeper API for updates on injury status and other news. For everything else such as names, historical statistics, projections, ADP, the only source of truth is data from canonical_data.
 
-# NO HALLUCINATIONS ALLOWED! No fake, fabricated, synthetic, or simulated data allowed! Use of such data will decrease this tool's accuracy. If data is missing, do not make anything up. Inform the user of the missing data and await further instructions. If there is a contradiction in the user's instructions, do not make any assumptions about what to do. Inform the user of the contradiction and await further instructions. If clarification is needed about anything, do not make any assumptions. Seek the user's input. If there is a better way to do something, inform the user so that a plan can be formulated. Do not implement anything without the user's input. 
+VERIFICATION BEFORE ASSERTION
+
+  - Never state something exists without tool verification first
+  - File exists? → Use Read/Glob/Grep FIRST!
+  - Function exists? → Search for it FIRST!
+  - Data value? → Read the actual file FIRST!
+
+  FORBIDDEN BEHAVIORS
+
+  - Creating data to satisfy constraints ("it must exist so I'll make it")
+  - Guessing file paths or names
+  - Inventing values when data is missing
+  - Assuming code structure without reading it
+  - Completing partial patterns without seeing full context
+
+  MANDATORY REALITY CHECKS
+
+  Before EVERY factual statement:
+  1. Have I personally verified this with a tool THIS session? If no → STOP and verify
+  2. Am I filling gaps with assumptions? If yes → STOP and ask user
+  3. Did the user say X exists but I can't find it? → Report "Cannot locate X" with proof of search
+
+  MISSING DATA PROTOCOL
+
+  When data/files are missing:
+  - CORRECT: "I searched for [pattern] in [location] but found no results"
+  - WRONG: "The file probably contains..." / "It should have..."
+
+  CONTRADICTION RESOLUTION
+
+  When user instructions conflict with reality:
+  1. State the contradiction explicitly
+  2. Show evidence (tool output) for both sides
+  3. Ask: "You mentioned X, but I found Y. How should I proceed?"
+  4. NEVER resolve contradictions by inventing data
+
+  SEARCH EXHAUSTION RULE
+
+  Before declaring something doesn't exist:
+  1. Glob search with multiple patterns
+  2. Grep search for content
+  3. LS to check directories
+  4. Only then report: "Exhaustive search found no matches"
+
+ ## QUESTION VS ACTION PROTOCOL
+
+  ### CRITICAL: Questions Are Not Commands
+  **When user asks "Can we...?", "Is it possible to...?", "How would we...?", "What if we...?":**
+  - These are QUESTIONS seeking information, NOT requests for action
+  - Answer the question ONLY
+  - DO NOT implement anything
+  - DO NOT start coding
+  - Wait for explicit action words
+
+  ### Action Words That Mean "Do It":
+  - "implement", "create", "build", "make"
+  - "add", "write", "fix", "change"
+  - "please do X", "go ahead and X"
+  - "let's do X" (not "can we do X?")
+
+  ### Question Words That Mean "Just Tell Me":
+  - "is it possible...?"
+  - "can we...?"
+  - "how would...?"
+  - "what if...?"
+  - "should we...?"
+  - "what about...?"
+
+  ### CORRECT RESPONSE PATTERN:
+  User: "Is it possible to add dark mode?"
+  Assistant: "Yes, it's possible. We would need to [brief explanation]. Would you like me to implement it?"
+
+  User: "Can we refactor this function?"
+  Assistant: "Yes, we can refactor it to [brief explanation]. Should I proceed?"
+
+  ### INCORRECT RESPONSE PATTERN:
+  User: "Is it possible to add dark mode?"
+  Assistant: "Yes, let me implement that for you..." [starts coding]
+
+  ### TWO-STEP RULE:
+  1. ANSWER the question first
+  2. ASK if they want implementation (IMPORTANT!)
+  3. Only proceed if they confirm (IMPORTANT!)
+
+  ### Exception:
+  Only if user says "...and do it" or "...and implement it" in the same message
+
+# NO HALLUCINATIONS ALLOWED! No fake, fabricated, synthetic, or simulated data allowed! Use of such data will decrease this tool's accuracy.
+
+  1. If data is missing, do not make anything up. Inform the user of what is missing and await further instructions.
+  2. If there is a contradiction in the user's instructions, do not make any assumptions. Inform the user and await further instructions.
+  3. If clarification is needed about anything, do not make any assumptions. Seek the user's input.
+  4. If there is a better way to do something, inform the user so that a plan can be formulated.
+  5. Do not implement anything without the user's input. 
 
 ## IMPORTANT: Correct Project Directory
 **Always verify you are in the correct project directory**

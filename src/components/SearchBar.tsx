@@ -89,7 +89,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ players, onSelectPlayer })
             <div
               key={player.id}
               onClick={() => handleSelect(player)}
-              className="flex items-center justify-between p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+              className="flex items-center justify-between p-3 hover:bg-transparent cursor-pointer border-b border-gray-100 last:border-b-0"
             >
               <div className="flex items-center space-x-3">
                 <span className={`px-2 py-1 rounded text-xs font-semibold ${getPositionColor(player.position)}`}>

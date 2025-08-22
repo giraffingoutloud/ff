@@ -131,7 +131,7 @@ export const MyTeam: React.FC<MyTeamProps> = ({ team }) => {
               </span>
               {pos.player ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-sm font-semibold dark:text-dark-text truncate">{pos.player.name}</span>
+                  <span className="text-lg font-semibold dark:text-dark-text truncate">{pos.player.name}</span>
                   <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">${pos.player.purchasePrice}</span>
                 </div>
               ) : (
