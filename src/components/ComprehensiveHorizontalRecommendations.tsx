@@ -62,7 +62,7 @@ export const ComprehensiveHorizontalRecommendations: React.FC<ComprehensiveHoriz
       candidates = availablePlayers;
     }
     
-    return candidates.sort((a, b) => b.cvsScore - a.cvsScore).slice(0, 3); // Get top 3 for draft now
+    return candidates.sort((a, b) => b.cvsScore - a.cvsScore).slice(0, 6); // Get top 6
   };
   
   // Get recommendations
@@ -80,7 +80,7 @@ export const ComprehensiveHorizontalRecommendations: React.FC<ComprehensiveHoriz
         const bRatio = b.cvsScore / (b.adp || 200);
         return bRatio - aRatio;
       })
-      .slice(0, 3);
+      .slice(0, 6);
   }, [availablePlayers]);
   
   // Budget bargains - $5 or less with good value
@@ -96,7 +96,7 @@ export const ComprehensiveHorizontalRecommendations: React.FC<ComprehensiveHoriz
         const bValue = b.projectedPoints / (b.auctionValue || 1);
         return bValue - aValue;
       })
-      .slice(0, 3);
+      .slice(0, 6);
   }, [availablePlayers]);
   
   // PPR targets - High reception volume
@@ -104,56 +104,13 @@ export const ComprehensiveHorizontalRecommendations: React.FC<ComprehensiveHoriz
     return availablePlayers
       .filter(p => p.receptions && p.receptions > 0)
       .sort((a, b) => (b.receptions || 0) - (a.receptions || 0))
-      .slice(0, 3);
+      .slice(0, 6);
   }, [availablePlayers]);
   
   return (
     <div className="bg-dark-bg-secondary rounded-xl border border-dark-border">
-      {/* Header */}
-      <div className="p-3 border-b border-dark-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-yellow-500 flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3" />
-              <span className="font-bold">Need:</span> {teamNeeds.critical.length > 0 ? teamNeeds.critical.join(', ') : 'Roster Complete'}
-            </span>
-          </div>
-        </div>
-      </div>
-      
       {/* Content - Single view, no tabs */}
-      <div className="p-3 space-y-3">
-        {/* DRAFT NOW - Primary recommendation with alternatives */}
-        {bestAvailable.length > 0 && (
-          <div className="bg-draft-primary/10 border border-draft-primary rounded-lg p-3">
-            <div className="grid grid-cols-2 gap-3">
-              {/* Primary pick - left side */}
-              <div>
-                <div className="text-base font-bold text-dark-text">
-                  {bestAvailable[0].name} ({bestAvailable[0].position})
-                </div>
-                <div className="text-sm text-dark-text-secondary">
-                  CVS: {isNaN(bestAvailable[0].cvsScore) ? 'N/A' : Math.round(bestAvailable[0].cvsScore)} • {Math.round(bestAvailable[0].projectedPoints)} pts
-                </div>
-              </div>
-              
-              {/* Also consider - right side */}
-              {bestAvailable.length > 1 && (
-                <div>
-                  <div className="text-xs text-dark-text-secondary mb-1">Also consider:</div>
-                  <div className="space-y-0.5">
-                    {bestAvailable.slice(1, 3).map((player, idx) => (
-                      <div key={player.id} className="text-xs text-dark-text-secondary">
-                        {idx + 2}. {player.name} ({player.position})
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        
+      <div className="p-3">
         {/* Three columns of recommendations */}
         <div className="grid grid-cols-3 gap-3">
           {/* Value Picks */}
@@ -166,12 +123,12 @@ export const ComprehensiveHorizontalRecommendations: React.FC<ComprehensiveHoriz
             <div className="space-y-1">
               {valuePicks.length > 0 ? (
                 valuePicks.map((p, idx) => (
-                  <div key={p.id} className="text-xs text-dark-text-secondary">
-                    {idx + 1}. {p.name} (R{Math.ceil(p.adp / 12)})
+                  <div key={p.id} className="text-[9px] text-dark-text-secondary">
+                    {idx + 1}. {p.name}
                   </div>
                 ))
               ) : (
-                <div className="text-xs text-dark-text-secondary italic">No value picks found</div>
+                <div className="text-[9px] text-dark-text-secondary italic">No value picks found</div>
               )}
             </div>
           </div>
@@ -186,19 +143,19 @@ export const ComprehensiveHorizontalRecommendations: React.FC<ComprehensiveHoriz
             <div className="space-y-1">
               {budgetBargains.length > 0 ? (
                 budgetBargains.map((p, idx) => (
-                  <div key={p.id} className="text-xs text-dark-text-secondary">
-                    {idx + 1}. {p.name} (${p.auctionValue})
+                  <div key={p.id} className="text-[9px] text-dark-text-secondary">
+                    {idx + 1}. {p.name}
                   </div>
                 ))
               ) : (
-                <div className="text-xs text-dark-text-secondary italic">No bargains found</div>
+                <div className="text-[9px] text-dark-text-secondary italic">No bargains found</div>
               )}
             </div>
           </div>
           
           {/* PPR Targets */}
           <div className="bg-dark-bg rounded-lg p-2">
-            <h4 className="text-xs font-semibold text-yellow-500 mb-2 flex items-center gap-1 cursor-help"
+            <h4 className="text-xs font-semibold text-purple-500 mb-2 flex items-center gap-1 cursor-help"
                 title="Players with highest projected reception counts, valuable in PPR (Point Per Reception) leagues">
               <Target className="w-3 h-3" />
               PPR TARGETS
@@ -206,12 +163,12 @@ export const ComprehensiveHorizontalRecommendations: React.FC<ComprehensiveHoriz
             <div className="space-y-1">
               {pprTargets.length > 0 ? (
                 pprTargets.map((p, idx) => (
-                  <div key={p.id} className="text-xs text-dark-text-secondary">
-                    {idx + 1}. {p.name} (+{Math.round(p.receptions || 0)})
+                  <div key={p.id} className="text-[9px] text-dark-text-secondary">
+                    {idx + 1}. {p.name}
                   </div>
                 ))
               ) : (
-                <div className="text-xs text-dark-text-secondary italic">No PPR targets found</div>
+                <div className="text-[9px] text-dark-text-secondary italic">No PPR targets found</div>
               )}
             </div>
           </div>

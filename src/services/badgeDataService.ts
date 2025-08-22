@@ -231,23 +231,23 @@ class BadgeDataService {
     const stats = this.historicalStats.get(playerName.toLowerCase());
     if (!stats) return false;
 
-    // Either high red zone touch percentage OR high absolute red zone touches
-    const highRedZonePercentage = stats.redZonePercentage >= 20; // 20%+ of touches in RZ
-    const highRedZoneTouches = stats.totalRedZoneTouches >= 18; // 18+ RZ touches (more strict)
-    const redZoneTDs = (stats.rzRecTds + stats.rzRushTds) >= 7; // 7+ RZ TDs (more strict)
+    // Much stricter criteria for RZ Monster
+    const highRedZonePercentage = stats.redZonePercentage >= 25; // 25%+ of touches in RZ (was 20%)
+    const highRedZoneTouches = stats.totalRedZoneTouches >= 30; // 30+ RZ touches (was 18)
+    const redZoneTDs = (stats.rzRecTds + stats.rzRushTds) >= 10; // 10+ RZ TDs (was 7)
 
     return (highRedZonePercentage || highRedZoneTouches) && redZoneTDs;
   }
 
   /**
-   * Check if player is a "Volume King" (top 20% in projected touches)
+   * Check if player is a "Volume King" (top 10% in projected touches)
    */
   isVolumeKing(playerName: string): boolean {
     const volume = this.projectedVolumes.get(playerName.toLowerCase());
     if (!volume) return false;
 
-    // Top 20% = 80th percentile or higher
-    return volume.projectedTouches >= this.volumePercentiles.p80;
+    // Top 10% = 90th percentile or higher (was top 20%)
+    return volume.projectedTouches >= this.volumePercentiles.p90;
   }
 
   /**

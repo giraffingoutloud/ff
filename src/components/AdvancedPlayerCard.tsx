@@ -67,39 +67,38 @@ export const AdvancedPlayerCard: React.FC<AdvancedPlayerCardProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.02, y: -2 }}
-      className="relative bg-dark-bg-secondary backdrop-blur-sm border border-dark-border rounded-xl p-4 hover:border-draft-primary transition-all duration-200 cursor-pointer"
+      className="relative bg-dark-bg-secondary backdrop-blur-sm border border-dark-border rounded-xl p-4 hover:border-draft-primary hover:shadow-lg transform hover:scale-[1.02] hover:-translate-y-0.5 transition-transform duration-150 cursor-pointer min-h-[320px]"
       onClick={onDetail}
     >
       {/* Position Badge */}
-      <div className={`absolute top-2 left-2 ${positionColor} text-white text-xs font-bold px-1.5 py-0.5 rounded`}>
+      <div className={`absolute top-2 left-2 ${positionColor} text-white text-[10px] font-bold px-1 py-0.5 rounded`}>
         {player.position}
       </div>
       
       {/* Regression Indicator */}
       {regressionIndicator && (
         <div className={`absolute top-2 right-2 flex items-center gap-1 ${regressionIndicator.color}`}>
-          <regressionIndicator.icon className="w-4 h-4" />
-          <span className="text-xs font-medium">{regressionIndicator.label}</span>
+          <regressionIndicator.icon className="w-3 h-3" />
+          <span className="text-[10px] font-medium">{regressionIndicator.label}</span>
         </div>
       )}
       
       {/* Player Info */}
       <div className="mt-6">
-        <h3 className="text-lg font-bold text-dark-text">{player.name}</h3>
-        <p className="text-sm text-dark-text-secondary">{player.team} • Bye: {player.byeWeek}</p>
+        <h3 className="text-sm font-bold text-dark-text">{player.name}</h3>
+        <p className="text-xs text-dark-text-secondary">{player.team} • Bye: {player.byeWeek}</p>
       </div>
       
       {/* Main Stats */}
       <div className="mt-4 grid grid-cols-3 gap-2">
         <div className="text-center">
-          <p className="text-2xl font-bold text-dark-text">{Math.round(player.projectedPoints)}</p>
-          <p className="text-xs text-dark-text-secondary">Proj Pts</p>
+          <p className="text-lg font-bold text-dark-text">{Math.round(player.projectedPoints)}</p>
+          <p className="text-[10px] text-dark-text-secondary">Proj Pts</p>
         </div>
         {player.position !== 'K' && player.position !== 'DST' ? (
           <>
             <div className="text-center">
-              <p className={`text-lg font-bold ${
+              <p className={`text-sm font-bold ${
                 (player.receptions || 0) >= 80 ? 'text-purple-400' :
                 (player.receptions || 0) >= 60 ? 'text-blue-400' :
                 (player.receptions || 0) >= 40 ? 'text-cyan-400' :
@@ -110,7 +109,7 @@ export const AdvancedPlayerCard: React.FC<AdvancedPlayerCardProps> = ({
               <p className="text-[10px] text-dark-text-secondary">PPR Bonus</p>
             </div>
             <div className="text-center">
-              <p className={`text-lg font-bold ${
+              <p className={`text-sm font-bold ${
                 player.cvsScore >= 90 ? 'text-emerald-400' :
                 player.cvsScore >= 80 ? 'text-green-500' : 
                 player.cvsScore >= 70 ? 'text-lime-500' :
@@ -122,7 +121,7 @@ export const AdvancedPlayerCard: React.FC<AdvancedPlayerCardProps> = ({
               }`}>
                 {isNaN(player.cvsScore) ? 'N/A' : Math.round(player.cvsScore)}
               </p>
-              <p className="text-xs text-dark-text-secondary">CVS Score</p>
+              <p className="text-[10px] text-dark-text-secondary">CVS Score</p>
             </div>
           </>
         ) : (
@@ -257,7 +256,10 @@ export const AdvancedPlayerCard: React.FC<AdvancedPlayerCardProps> = ({
       
       {/* Injury Status */}
       {player.injuryStatus && player.injuryStatus !== 'Healthy' && (
-        <div className="absolute bottom-2 right-2">
+        <div 
+          className="absolute bottom-2 right-2 cursor-help" 
+          title={`Injury Status: ${player.injuryStatus}${player.injuryBodyPart ? ` - ${player.injuryBodyPart}` : ''}${player.injuryNotes ? ` - ${player.injuryNotes}` : ''}`}
+        >
           <AlertTriangle className="w-4 h-4 text-draft-warning" />
         </div>
       )}

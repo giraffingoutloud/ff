@@ -6,12 +6,14 @@ interface DarkPlayerComparisonProps {
   players: Player[];
   onClose: () => void;
   onRemovePlayer?: (playerId: string) => void;
+  isEmbedded?: boolean;
 }
 
 export const DarkPlayerComparison: React.FC<DarkPlayerComparisonProps> = ({ 
   players, 
   onClose,
-  onRemovePlayer 
+  onRemovePlayer,
+  isEmbedded = false 
 }) => {
   if (players.length === 0) return null;
 
@@ -61,6 +63,120 @@ export const DarkPlayerComparison: React.FC<DarkPlayerComparisonProps> = ({
     { key: 'auctionValue', label: 'Auction Value', icon: <DollarSign className="w-4 h-4" />, higherIsBetter: true },
     { key: 'age', label: 'Age', icon: <Star className="w-4 h-4" />, higherIsBetter: false },
   ];
+
+  if (isEmbedded) {
+    return (
+      <div className="p-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {players.map(player => {
+            const receptionPercentage = player.targets && player.targets > 0 ? 
+              ((player.receptions || 0) / player.targets) * 100 : 0;
+            
+            return (
+              <div key={player.id} className="bg-dark-bg rounded-lg border border-dark-border p-2">
+                {/* Player Header */}
+                <div className="mb-2 pb-2 border-b border-dark-border">
+                  <div className="flex items-start justify-between mb-1">
+                    <div className="flex-1">
+                      <h3 className="font-bold text-dark-text text-xs">{player.name}</h3>
+                      <p className="text-[10px] text-dark-text-secondary">{player.team}</p>
+                    </div>
+                    {onRemovePlayer && (
+                      <button
+                        onClick={() => onRemovePlayer(player.id)}
+                        className="text-dark-text-secondary hover:text-red-400 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className={`text-[9px] font-bold px-0.5 py-0 rounded border ${getPositionColor(player.position)}`}>
+                      {player.position}
+                    </span>
+                    {player.injuryStatus && player.injuryStatus !== 'Healthy' && (
+                      <div className="flex items-center gap-1">
+                        {getInjuryIcon(player.injuryStatus)}
+                        <span className="text-[9px] text-dark-text-secondary">{player.injuryStatus}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="space-y-1">
+                  {statCategories.map(stat => {
+                    const value = player[stat.key as keyof Player] as number;
+                    const otherValues = players
+                      .filter(p => p.id !== player.id)
+                      .map(p => p[stat.key as keyof Player] as number);
+                    
+                    return (
+                      <div key={stat.key} className="flex items-center justify-between">
+                        <div className="flex items-center gap-1 text-dark-text-secondary">
+                          <span className="text-[10px]">{stat.label}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className={`text-[10px] font-bold ${
+                            stat.key === 'cvsScore' && value >= 80 ? 'text-green-400' :
+                            stat.key === 'cvsScore' && value >= 60 ? 'text-yellow-400' :
+                            'text-dark-text'
+                          }`}>
+                            {stat.key === 'auctionValue' && value === 0 ? 'N/A' :
+                             stat.key === 'auctionValue' ? `$${Math.round(value)}` :
+                             stat.key === 'adp' ? Number(value).toFixed(1) :
+                             Math.round(value)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Additional PPR Stats if available */}
+                  {('receptions' in player) && (
+                    <div className="pt-2 mt-2 border-t border-dark-border space-y-1">
+                      <div className="text-[9px] text-dark-text-secondary font-semibold">PPR STATS</div>
+                      {['receptions', 'targets', 'receivingYards', 'receivingTDs'].map(key => {
+                        const value = (player as any)[key];
+                        if (value === undefined) return null;
+                        
+                        const label = key === 'receptions' ? 'Receptions' :
+                                     key === 'targets' ? 'Targets' :
+                                     key === 'receivingYards' ? 'Rec Yards' :
+                                     'Rec TDs';
+                        
+                        return (
+                          <div key={key} className="flex items-center justify-between">
+                            <span className="text-[10px] text-dark-text-secondary">{label}</span>
+                            <span className="text-[10px] font-medium text-dark-text">
+                              {Math.round(value)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {/* Reception Percentage */}
+                      {player.targets && player.targets > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-dark-text-secondary">Catch %</span>
+                          <span className={`text-[10px] font-medium ${
+                            receptionPercentage >= 70 ? 'text-green-400' :
+                            receptionPercentage >= 60 ? 'text-yellow-400' :
+                            'text-red-400'
+                          }`}>
+                            {receptionPercentage.toFixed(1)}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -166,6 +282,19 @@ export const DarkPlayerComparison: React.FC<DarkPlayerComparisonProps> = ({
                           </div>
                         );
                       })}
+                      {/* Reception Percentage */}
+                      {player.targets && player.targets > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-dark-text-secondary">Catch %</span>
+                          <span className={`text-sm font-medium ${
+                            ((player.receptions || 0) / player.targets) * 100 >= 70 ? 'text-green-400' :
+                            ((player.receptions || 0) / player.targets) * 100 >= 60 ? 'text-yellow-400' :
+                            'text-red-400'
+                          }`}>
+                            {(((player.receptions || 0) / player.targets) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

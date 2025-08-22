@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, User, Undo } from 'lucide-react';
+import { Clock, User, Undo, Check } from 'lucide-react';
 import { useDraftStore } from '../store/draftStore';
 import { format } from 'date-fns';
 
@@ -9,11 +9,11 @@ export const DraftHistory: React.FC = () => {
   const getPositionColor = (position: string) => {
     const colors: Record<string, string> = {
       QB: 'bg-red-900/30 text-red-400',
-      RB: 'bg-blue-900/30 text-blue-400',
-      WR: 'bg-green-900/30 text-green-400',
-      TE: 'bg-purple-900/30 text-purple-400',
-      K: 'bg-gray-900/30 text-gray-400',
-      DST: 'bg-orange-900/30 text-orange-400',
+      RB: 'bg-green-900/30 text-green-400',
+      WR: 'bg-blue-900/30 text-blue-400',
+      TE: 'bg-orange-900/30 text-orange-400',
+      K: 'bg-violet-900/30 text-violet-400',
+      DST: 'bg-gray-900/30 text-gray-400',
     };
     return colors[position] || 'bg-gray-900/30 text-gray-400';
   };
@@ -31,7 +31,10 @@ export const DraftHistory: React.FC = () => {
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center mb-2">
-        <h3 className="text-sm font-semibold text-dark-text">Recent Picks</h3>
+        <h3 className="text-sm font-semibold text-dark-text flex items-center gap-1">
+          <Check className="w-3 h-3 text-white" />
+          Recent Picks
+        </h3>
         {draftHistory.length > 0 && (
           <button
             onClick={undoDraft}
@@ -43,7 +46,7 @@ export const DraftHistory: React.FC = () => {
         )}
       </div>
 
-      <div className="space-y-1 max-h-64 overflow-y-auto">
+      <div className="space-y-1 max-h-96 overflow-y-auto">
         {draftHistory.slice(-5).reverse().map((player, index) => (
           <div
             key={`${player.id}-${player.timestamp}`}
@@ -76,7 +79,7 @@ export const DraftHistory: React.FC = () => {
               
               <div className="text-right">
                 <p className="text-sm font-bold text-dark-primary">${player.purchasePrice}</p>
-                <p className="text-xs text-dark-text-tertiary">CVS: {player.cvsScore}</p>
+                <p className="text-[10px] text-dark-text-tertiary">CVS: {player.cvsScore}</p>
               </div>
             </div>
           </div>

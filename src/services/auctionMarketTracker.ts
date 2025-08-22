@@ -125,6 +125,33 @@ export class AuctionMarketTracker {
   }
   
   /**
+   * Handle undo - add player back to available list
+   */
+  undoDraft(player: Player, teamId: string, price: number) {
+    // Add player back to available players
+    this.availablePlayers.push(player);
+    
+    // Remove from drafted players
+    this.draftedPlayers = this.draftedPlayers.filter(p => p.id !== player.id);
+    
+    // Update team budget
+    const team = this.teamBudgets.get(teamId);
+    if (team) {
+      team.spent = Math.max(0, team.spent - price);
+      team.remaining = this.totalBudget - team.spent;
+      team.roster = team.roster?.filter(p => p.id !== player.id) || [];
+    }
+    
+    // Remove the price from position tracking
+    const prices = this.positionPrices.get(player.position) || [];
+    const priceIndex = prices.lastIndexOf(price);
+    if (priceIndex !== -1) {
+      prices.splice(priceIndex, 1);
+      this.positionPrices.set(player.position, prices);
+    }
+  }
+  
+  /**
    * Calculate current market conditions
    */
   getMarketConditions(): MarketConditions {

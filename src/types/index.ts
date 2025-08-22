@@ -15,8 +15,15 @@ export interface Player {
   cvsScore: number; // Composite Value Score
   injuryStatus?: 'Healthy' | 'Questionable' | 'Doubtful' | 'Out' | 'IR' | 'PUP' | 'Suspended';
   injuryNotes?: string;
+  injuryBodyPart?: string; // Body part affected
+  practiceParticipation?: string; // Practice status from Sleeper
+  practiceDescription?: string; // Practice details from Sleeper
+  height?: string; // Height from Sleeper (in inches)
+  weight?: string; // Weight from Sleeper (in lbs)
+  depthChartPosition?: string; // Position on depth chart (e.g., "QB", "RB1", "WR2")
+  depthChartOrder?: number; // Order in depth chart (1 = starter, 2 = backup, etc.)
   news?: PlayerNews[];
-  trending?: number; // Trending score from live data
+  trending?: number; // Trending score from live data (times added/dropped)
   // PPR-specific stats (optional to maintain compatibility)
   rushAttempts?: number;
   rushYards?: number;

@@ -49,6 +49,7 @@ Every piece of information comes from verified sources:
 canonical_data/
 ├── adp/
 │   └── *_2025.csv                # 2025-2026 ADP rankings
+│   └── *_2025.txt                # 2025-2026 ADP rankings
 ├── projections/
 │   └── *_projections_2025.csv    # 2025-2026 season projections
 ├── historical_stats/

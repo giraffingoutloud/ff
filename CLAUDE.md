@@ -157,7 +157,7 @@ Canonical: "D'Andre Swift" ↔ Sleeper: "Dandre Swift"
 
 #### Priority Order for Canonical Files:
 1. `projections/*.csv` - Primary source
-2. `adp/main_adp_2025.csv` - Secondary source  
+2. `adp/adp0_2025.csv` - Secondary source  
 3. `rankings/*.csv` - Tertiary source
 4. Other files - Last resort
 

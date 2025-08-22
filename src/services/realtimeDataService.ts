@@ -37,6 +37,13 @@ interface SleeperPlayer {
   position?: string;
   injury_status?: string;
   injury_notes?: string;
+  injury_body_part?: string;
+  practice_participation?: string;
+  practice_description?: string;
+  height?: string;
+  weight?: string;
+  depth_chart_position?: string;
+  depth_chart_order?: number;
   news_updated?: string;
 }
 
@@ -45,7 +52,13 @@ interface PlayerUpdate {
   team?: string;
   injuryStatus?: string;
   injuryNotes?: string;
-  newsUpdated?: Date;
+  injuryBodyPart?: string;
+  practiceParticipation?: string;
+  practiceDescription?: string;
+  height?: string;
+  weight?: string;
+  depthChartPosition?: string;
+  depthChartOrder?: number;
   trending?: number;
 }
 
@@ -136,13 +149,13 @@ export class RealtimeDataService {
   }
   
   /**
-   * Fetch injury updates ONLY
+   * Fetch injury updates and physical attributes
    */
   async fetchInjuryUpdates(): Promise<Map<string, PlayerUpdate>> {
     const updates = new Map<string, PlayerUpdate>();
     
     try {
-      console.log('Fetching injury updates from Sleeper API...');
+      console.log('Fetching injury updates and player data from Sleeper API...');
       const response = await fetch(`${UPDATE_CONFIG.SLEEPER_BASE_URL}/players/nfl`);
       
       if (!response.ok) {
@@ -151,31 +164,56 @@ export class RealtimeDataService {
       
       const data = await response.json();
       let injuryCount = 0;
+      let physicalDataCount = 0;
       
       Object.values(data as Record<string, SleeperPlayer>).forEach(player => {
-        if (player.injury_status && player.injury_status !== 'Healthy') {
-          const name = player.full_name || `${player.first_name} ${player.last_name}`;
+        const name = player.full_name || `${player.first_name} ${player.last_name}`;
+        
+        // Create an update if player has injury status OR physical attributes
+        const hasInjury = player.injury_status && player.injury_status !== 'Healthy';
+        const hasPhysicalData = player.height || player.weight || player.depth_chart_position;
+        
+        if (hasInjury || hasPhysicalData) {
+          const update: PlayerUpdate = {
+            name
+          };
           
-          // Log first few injuries to see what data we're getting
-          if (injuryCount < 3) {
-            console.log(`Injury data for ${name}:`, {
-              status: player.injury_status,
-              notes: player.injury_notes,
-              mapped: this.mapInjuryStatus(player.injury_status)
-            });
+          // Add injury data if present
+          if (hasInjury) {
+            update.injuryStatus = this.mapInjuryStatus(player.injury_status);
+            update.injuryNotes = player.injury_notes;
+            update.injuryBodyPart = player.injury_body_part;
+            update.practiceParticipation = player.practice_participation;
+            update.practiceDescription = player.practice_description;
+            injuryCount++;
+            
+            // Log first few injuries to see what data we're getting
+            if (injuryCount <= 3) {
+              console.log(`Injury data for ${name}:`, {
+                status: player.injury_status,
+                notes: player.injury_notes,
+                mapped: this.mapInjuryStatus(player.injury_status)
+              });
+            }
           }
           
-          updates.set(name, {
-            name,
-            injuryStatus: this.mapInjuryStatus(player.injury_status),
-            injuryNotes: player.injury_notes
-          });
+          // Always add physical attributes if available
+          if (player.height) update.height = player.height;
+          if (player.weight) update.weight = player.weight;
+          if (player.depth_chart_position) update.depthChartPosition = player.depth_chart_position;
+          if (player.depth_chart_order !== undefined) update.depthChartOrder = player.depth_chart_order;
           
-          injuryCount++;
+          if (hasPhysicalData && !hasInjury) {
+            physicalDataCount++;
+          }
+          
+          updates.set(name, update);
         }
       });
       
       console.log(`  ✓ Found ${injuryCount} injury updates`);
+      console.log(`  ✓ Found ${physicalDataCount} players with physical data only`);
+      console.log(`  ✓ Total updates: ${updates.size}`);
       this.lastUpdateTime.set('injuries', new Date());
     } catch (error) {
       console.error('Failed to fetch injury updates:', error);

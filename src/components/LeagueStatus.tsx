@@ -73,8 +73,8 @@ export const LeagueStatus: React.FC<LeagueStatusProps> = ({ teams }) => {
                   : 'border-gray-700 bg-gray-800/50'
               }`}
             >
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1">
+              <div className="flex justify-between items-start mb-2 gap-2">
+                <div className="flex-1 min-w-0">
                   {editingTeam === team.id ? (
                     <div className="flex items-center space-x-2">
                       <input
@@ -120,16 +120,16 @@ export const LeagueStatus: React.FC<LeagueStatusProps> = ({ teams }) => {
                     {team.roster.length}/16 players
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="text-right flex-shrink-0">
                   <p className="font-bold text-lg text-dark-text">${remainingBudget}</p>
                   <p className={`text-xs ${pace.color}`}>{pace.label}</p>
                 </div>
               </div>
 
-              <div className="bg-gray-700 rounded-full h-2">
+              <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
                 <div
                   className={`${isMyTeam ? 'bg-draft-primary' : 'bg-gray-600'} rounded-full h-2 transition-all`}
-                  style={{ width: `${(team.spentBudget / team.budget) * 100}%` }}
+                  style={{ width: `${Math.min(100, (team.spentBudget / team.budget) * 100)}%` }}
                 />
               </div>
 
@@ -137,14 +137,31 @@ export const LeagueStatus: React.FC<LeagueStatusProps> = ({ teams }) => {
                 <div className="mt-2">
                   <p className="text-xs text-gray-400 mb-1">Recent picks:</p>
                   <div className="flex flex-wrap gap-1">
-                    {team.roster.slice(-3).map(player => (
-                      <span
-                        key={player.id}
-                        className="text-xs bg-dark-bg px-2 py-1 rounded border border-gray-600 text-gray-300"
-                      >
-                        {player.position} ${player.purchasePrice}
-                      </span>
-                    ))}
+                    {team.roster.slice(-3).map(player => {
+                      const getPositionClass = (position: string) => {
+                        switch(position) {
+                          case 'QB': return 'bg-red-900/30 text-red-400';
+                          case 'RB': return 'bg-blue-900/30 text-blue-400';
+                          case 'WR': return 'bg-green-900/30 text-green-400';
+                          case 'TE': return 'bg-purple-900/30 text-purple-400';
+                          case 'K': return 'bg-gray-900/30 text-gray-400';
+                          case 'DST': return 'bg-orange-900/30 text-orange-400';
+                          default: return 'bg-gray-900/30 text-gray-400';
+                        }
+                      };
+                      
+                      return (
+                        <span
+                          key={player.id}
+                          className="text-xs px-2 py-1 bg-dark-bg rounded border border-gray-600 whitespace-nowrap flex items-center gap-1"
+                        >
+                          <span className={`text-[10px] font-bold px-1 py-0.5 rounded ${getPositionClass(player.position)}`}>
+                            {player.position}
+                          </span>
+                          <span className="text-gray-300">${player.purchasePrice}</span>
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               )}

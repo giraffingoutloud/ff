@@ -26,7 +26,7 @@ import { ExtendedPlayer } from './pprAnalyzer';
 
 // Import canonical data files
 import allProjections from '../../canonical_data/projections/qb_projections_2025.csv?raw';
-import mainADP from '../../canonical_data/adp/main_adp_2025.csv?raw';
+import mainADP from '../../canonical_data/adp/adp0_2025.csv?raw';
 import sosData from '../../canonical_data/strength_of_schedule/sos_2025.csv?raw';
 
 // Cache for Sleeper player data
@@ -703,29 +703,54 @@ export class ImprovedCanonicalService {
         console.log('Sample real-time update:', firstUpdate);
       }
       
-      updates.forEach((update, playerName) => {
-        const player = this.players.get(playerName);
-        if (player) {
+      updates.forEach((update, sleeperName) => {
+        // Try to find matching player using name normalizer
+        let matchedPlayer: ExtendedPlayer | undefined;
+        let matchedName: string | undefined;
+        
+        // First try exact match
+        matchedPlayer = this.players.get(sleeperName);
+        if (matchedPlayer) {
+          matchedName = sleeperName;
+        } else {
+          // Try to find a match using name variations
+          for (const [canonicalName, player] of this.players) {
+            if (nameNormalizer.match(canonicalName, sleeperName)) {
+              matchedPlayer = player;
+              matchedName = canonicalName;
+              break;
+            }
+          }
+        }
+        
+        if (matchedPlayer) {
           if (update.injuryStatus) {
-            player.injuryStatus = update.injuryStatus as Player['injuryStatus'];
+            matchedPlayer.injuryStatus = update.injuryStatus as Player['injuryStatus'];
           }
           if (update.injuryNotes) {
-            player.injuryNotes = update.injuryNotes;
-            console.log(`Applying injury notes for ${playerName}: "${update.injuryNotes}"`);
+            matchedPlayer.injuryNotes = update.injuryNotes;
+            console.log(`Applying injury notes for ${matchedName || sleeperName}: "${update.injuryNotes}"`);
           }
+          if (update.injuryBodyPart) matchedPlayer.injuryBodyPart = update.injuryBodyPart;
+          if (update.practiceParticipation) matchedPlayer.practiceParticipation = update.practiceParticipation;
+          if (update.practiceDescription) matchedPlayer.practiceDescription = update.practiceDescription;
+          if (update.height) matchedPlayer.height = update.height;
+          if (update.weight) matchedPlayer.weight = update.weight;
+          if (update.depthChartPosition) matchedPlayer.depthChartPosition = update.depthChartPosition;
+          if (update.depthChartOrder !== undefined) matchedPlayer.depthChartOrder = update.depthChartOrder;
           // Special case for Matthew Stafford
-          if (playerName.includes('Stafford')) {
+          if ((matchedName || sleeperName).includes('Stafford')) {
             console.log(`Stafford update:`, update);
             console.log(`Stafford player after update:`, { 
-              injuryStatus: player.injuryStatus, 
-              injuryNotes: player.injuryNotes 
+              injuryStatus: matchedPlayer.injuryStatus, 
+              injuryNotes: matchedPlayer.injuryNotes 
             });
           }
-          if (update.team) player.team = update.team;
+          if (update.team) matchedPlayer.team = update.team;
           if (update.trending) {
-            player.news = [{
+            matchedPlayer.news = [{
               id: Date.now(),
-              playerId: player.id,
+              playerId: matchedPlayer.id,
               date: new Date(),
               source: 'sleeper',
               headline: `Trending: ${update.trending} adds`,
@@ -737,8 +762,17 @@ export class ImprovedCanonicalService {
         }
       });
       
+      // Count physical data updates
+      let physicalDataCount = 0;
+      this.players.forEach(player => {
+        if (player.height || player.weight || player.depthChartPosition) {
+          physicalDataCount++;
+        }
+      });
+      
       if (updateCount > 0) {
         console.log(`📡 Applied ${updateCount} real-time updates`);
+        console.log(`📊 Players with physical data: ${physicalDataCount}`);
         // Trigger React re-render by updating the store
         if ((window as any).updatePlayersFromRealtime) {
           (window as any).updatePlayersFromRealtime();

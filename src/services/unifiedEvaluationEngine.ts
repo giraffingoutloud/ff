@@ -146,15 +146,17 @@ export class UnifiedEvaluationEngine {
     // 1. Auction Value Score (25%) - ONLY from canonical data, no defaults
     // If auction value is missing (N/A in CSV), exclude from weighted average
     const hasAuctionValue = player.auctionValue && player.auctionValue > 0;
+    // Use a more granular curve for auction value
     const auctionScore = hasAuctionValue ? Math.min(100, 
-      Math.log10(player.auctionValue + 10) * 45
+      Math.pow(player.auctionValue / 70, 0.75) * 100  // Power curve for better distribution
     ) : null;
     
     // 2. ADP Score (25%) - ONLY from canonical data, no defaults
     // If ADP is missing (null in CSV), exclude from weighted average
     const hasADP = player.adp && player.adp > 0 && player.adp < 999;
+    // More granular ADP scoring with better distribution
     const adpScore = hasADP ? Math.min(100,
-      Math.sqrt(Math.max(0, (300 - Math.min(player.adp, 300))) / 3) * 10
+      100 * Math.exp(-player.adp / 50)  // Exponential decay for smoother distribution
     ) : null;
     
     // 3. Projected Points Score (30%) - With PPR boost
@@ -177,7 +179,11 @@ export class UnifiedEvaluationEngine {
       projectedPoints += extPlayer.receptions || 0;
     }
     
-    const pointsScore = Math.min(100, (projectedPoints / positionMax) * 100);
+    // Add slight randomization factor based on player name hash to break ties
+    const nameHash = player.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const tieBreaker = (nameHash % 100) / 1000; // 0-0.099 tie breaker
+    
+    const pointsScore = Math.min(100, (projectedPoints / positionMax) * 100 + tieBreaker);
     
     // 4. Position Scarcity Score (15%)
     // Based on how many quality starters at position
@@ -201,7 +207,7 @@ export class UnifiedEvaluationEngine {
     if (volumeData && volumeData.momentumScore !== undefined && volumeData.momentumScore !== null) {
       // momentumScore is already -100 to 100 (percentage change)
       // Convert to 0-100 scale for CVS: 0% change = 50, +100% = 100, -100% = 0
-      trendScore = Math.round(50 + (volumeData.momentumScore / 2));
+      trendScore = 50 + (volumeData.momentumScore / 2);  // Don't round for more granularity
       trendScore = Math.max(0, Math.min(100, trendScore));
     }
     
@@ -233,14 +239,13 @@ export class UnifiedEvaluationEngine {
     if (sosScore !== null) finalScore += sosScore * weights.sos;
     if (trendScore !== null) finalScore += trendScore * weights.trend;
     
-    // Add elite tier bonuses based on ADP
-    // These bonuses help differentiate truly elite players
-    if (player.adp <= 12) {
-      finalScore += 10; // Top 12 overall gets +10 bonus
-    } else if (player.adp <= 24) {
-      finalScore += 7;  // Top 24 overall gets +7 bonus
-    } else if (player.adp <= 36) {
-      finalScore += 5;  // Top 36 overall gets +5 bonus
+    // Add elite tier bonuses based on ADP - More gradual to avoid clustering
+    // Use a smooth curve instead of step functions
+    if (player.adp > 0 && player.adp <= 36) {
+      // Logarithmic bonus that decreases smoothly from ADP 1 to 36
+      // ADP 1 gets ~8 bonus, ADP 12 gets ~5, ADP 24 gets ~3, ADP 36 gets ~1
+      const adpBonus = Math.max(0, 8 - Math.log10(player.adp) * 3.5);
+      finalScore += adpBonus;
     }
     
     // Add position rank bonus for top players at each position
@@ -250,11 +255,11 @@ export class UnifiedEvaluationEngine {
       finalScore += positionRankBonus;
     }
     
-    // Round to whole number
-    finalScore = Math.round(finalScore);
+    // Keep one decimal place for more granularity
+    finalScore = Math.round(finalScore * 10) / 10;
     
-    // Ensure never 0
-    finalScore = Math.max(1, Math.min(100, finalScore));
+    // Ensure valid range
+    finalScore = Math.max(0.1, Math.min(100, finalScore));
     
     // Create components for display with REAL DATA ONLY
     const components = {

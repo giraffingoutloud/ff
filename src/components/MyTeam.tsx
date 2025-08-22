@@ -95,20 +95,20 @@ export const MyTeam: React.FC<MyTeamProps> = ({ team }) => {
       </div>
 
       <div className="mb-4 p-3 bg-gray-50 dark:bg-dark-bg-tertiary rounded-lg">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
           <div className="flex items-center">
             <DollarSign className="w-4 h-4 mr-1 text-gray-600" />
             <span className="text-sm text-gray-600 dark:text-gray-400">Budget:</span>
           </div>
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <span className="font-bold text-lg dark:text-dark-text">${remainingBudget}</span>
             <span className="text-sm text-gray-500 dark:text-gray-400"> / ${team.budget}</span>
           </div>
         </div>
-        <div className="mt-2 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
           <div
             className="bg-draft-primary rounded-full h-2 transition-all"
-            style={{ width: `${((team.budget - remainingBudget) / team.budget) * 100}%` }}
+            style={{ width: `${Math.min(100, ((team.budget - remainingBudget) / team.budget) * 100)}%` }}
           />
         </div>
       </div>
@@ -125,14 +125,14 @@ export const MyTeam: React.FC<MyTeamProps> = ({ team }) => {
                   : 'bg-gray-50 border-gray-200'
             }`}
           >
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <div className="flex justify-between items-center gap-2">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex-shrink-0 min-w-[40px]">
                 {pos.label}
               </span>
               {pos.player ? (
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-semibold dark:text-dark-text">{pos.player.name}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">${pos.player.purchasePrice}</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm font-semibold dark:text-dark-text truncate">{pos.player.name}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">${pos.player.purchasePrice}</span>
                 </div>
               ) : (
                 <span className="text-xs text-gray-400 dark:text-gray-500 italic">Empty</span>

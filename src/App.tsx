@@ -14,7 +14,9 @@ import {
   X,
   ArrowUpDown,
   DollarSign,
-  Target
+  Target,
+  Edit2,
+  Check
 } from 'lucide-react';
 import { useDraftStore } from './store/draftStore';
 import { AdvancedPlayerCard } from './components/AdvancedPlayerCard';
@@ -40,14 +42,107 @@ import './utils/findPlayer';
 type ViewMode = 'grid' | 'list';
 type DraftMode = 'snake' | 'auction';
 
-// Extend the ExtendedPlayer type for ModernApp
+// Extend the ExtendedPlayer type for App
 interface ModernExtendedPlayer extends ExtendedPlayer {
   isDrafted?: boolean;
   purchasePrice?: number;
   auctionValue?: number;
 }
 
-export function ModernApp() {
+// Draggable Modal Component
+const DraggableModal: React.FC<{
+  children: React.ReactNode;
+  onClose: () => void;
+  title: string;
+}> = ({ children, onClose, title }) => {
+  const [position, setPosition] = useState({ x: window.innerWidth / 2 - (title === 'My Team' ? 350 : title === 'Data Quality Report' ? 225 : title === 'Draft Player' ? 350 : title === 'Player Comparison' ? 450 : 250), y: 50 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.modal-header')) {
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - position.x,
+        y: e.clientY - position.y
+      });
+    }
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        setPosition({
+          x: e.clientX - dragStart.x,
+          y: e.clientY - dragStart.y
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragStart]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 pointer-events-none"
+    >
+      <motion.div
+        ref={modalRef}
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className={`absolute bg-dark-bg-secondary rounded-xl overflow-hidden border border-dark-border pointer-events-auto shadow-2xl ${
+          title === 'My Team' ? 'w-[700px] h-[95vh]' : 
+          title === 'Data Quality Report' ? 'w-[450px] max-h-[85vh]' : 
+          title === 'Draft Player' ? 'w-[700px] max-h-[85vh]' :
+          title === 'Player Comparison' ? 'w-[900px] max-h-[85vh]' :
+          'w-[500px] max-h-[85vh]'
+        }`}
+        style={{
+          left: position.x,
+          top: position.y,
+        }}
+        onMouseDown={handleMouseDown}
+      >
+        <div className="modal-header flex items-center justify-between p-3 border-b border-dark-border cursor-move bg-dark-bg">
+          <h2 className="text-sm font-bold text-dark-text flex items-center gap-2">
+            <Users className="w-3 h-3 text-draft-primary" />
+            {title}
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg hover:bg-dark-bg-secondary transition-colors"
+          >
+            <X className="w-4 h-4 text-dark-text-secondary" />
+          </button>
+        </div>
+        <div className={`overflow-y-auto ${
+          title === 'My Team' ? 'h-[calc(95vh-50px)]' : 'max-h-[calc(85vh-50px)]'
+        }`}>
+          {children}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+export function App() {
   const {
     players,
     myTeam: storeMyTeam,
@@ -74,16 +169,16 @@ export function ModernApp() {
   const [showOnlyAvailable, setShowOnlyAvailable] = useState(true);
   const [extendedPlayers, setExtendedPlayers] = useState<ModernExtendedPlayer[]>([]);
   const [selectedPlayerDetail, setSelectedPlayerDetail] = useState<ModernExtendedPlayer | null>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const auctionTrackerInitialized = useRef(false);
   const [marketConditions, setMarketConditions] = useState<MarketConditions | null>(null);
   const [positionMarkets, setPositionMarkets] = useState<PositionMarket[]>([]);
-  const [sortColumn, setSortColumn] = useState<'name' | 'position' | 'team' | 'cvsScore' | 'projectedPoints' | 'receptions' | 'auctionValue' | 'adp' | 'round' | 'age' | 'sos'>('cvsScore');
+  const [sortColumn, setSortColumn] = useState<'name' | 'position' | 'team' | 'cvsScore' | 'projectedPoints' | 'receptions' | 'auctionValue' | 'adp' | 'round' | 'age' | 'byeWeek' | 'experience' | 'sos'>('cvsScore');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [displayCount, setDisplayCount] = useState(75);
   const [selectedForComparison, setSelectedForComparison] = useState<Set<string>>(new Set());
   const [showComparisonModal, setShowComparisonModal] = useState(false);
   const [showTeamCommandCenter, setShowTeamCommandCenter] = useState(false);
+  const [selectedBadges, setSelectedBadges] = useState<Set<string>>(new Set());
   const [draftPriceModal, setDraftPriceModal] = useState<{ 
     player: ModernExtendedPlayer | null, 
     show: boolean, 
@@ -103,6 +198,34 @@ export function ModernApp() {
     legitimacy: boolean 
   }>({ errors: 0, warnings: 0, hallucinations: 0, legitimacy: true });
   const [validationResults, setValidationResults] = useState<string>('');
+  const [customTeamNames, setCustomTeamNames] = useState<Record<string, string>>({});
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [tempTeamName, setTempTeamName] = useState<string>('');
+
+  // Load custom team names from localStorage on mount
+  useEffect(() => {
+    const savedNames = localStorage.getItem('fantasyCustomTeamNames');
+    if (savedNames) {
+      try {
+        setCustomTeamNames(JSON.parse(savedNames));
+      } catch (e) {
+        console.error('Failed to load team names:', e);
+      }
+    }
+  }, []);
+
+  // Save custom team names to localStorage whenever they change
+  useEffect(() => {
+    if (Object.keys(customTeamNames).length > 0) {
+      localStorage.setItem('fantasyCustomTeamNames', JSON.stringify(customTeamNames));
+    }
+  }, [customTeamNames]);
+
+  // Helper function to get display name for a team
+  const getTeamDisplayName = (team: Team, idx?: number) => {
+    if (team.id === 'my-team') return 'My Team';
+    return customTeamNames[team.id] || team.name || `Team ${idx !== undefined ? idx + 1 : team.id.replace('team-', '')}`;
+  };
 
   // Helper function to convert ADP to round (assumes 12-team league)
   const getAdpRoundRange = (adp: number): string => {
@@ -337,6 +460,7 @@ export function ModernApp() {
 
   // Sync teams from store whenever draft history changes
   const prevDraftLength = useRef(draftHistory.length);
+  const prevDraftHistory = useRef(draftHistory);
   useEffect(() => {
     // Always sync teams from store when draft history changes
     const storeTeams = useDraftStore.getState().teams;
@@ -351,34 +475,154 @@ export function ModernApp() {
     // Only sync if we have extended players loaded
     if (extendedPlayers.length === 0) return;
     
-    // Get IDs of all drafted players
+    // Check if this is an undo (draft history got shorter)
+    if (prevDraftLength.current > draftHistory.length && prevDraftLength.current > 0) {
+      // Find the player that was undone
+      const undonePlayer = prevDraftHistory.current[prevDraftHistory.current.length - 1];
+      if (undonePlayer && auctionTrackerInitialized.current) {
+        // Update auction tracker to add player back to available list
+        const restoredPlayer = extendedPlayers.find(p => p.id === undonePlayer.id);
+        if (restoredPlayer) {
+          auctionMarketTracker.undoDraft(
+            restoredPlayer,
+            undonePlayer.purchasedBy,
+            undonePlayer.purchasePrice
+          );
+          console.log('Updated auction tracker after undo:', restoredPlayer.name);
+        }
+      }
+      
+      // After undo, reinitialize the auction tracker with the correct available players
+      if (prevDraftLength.current > draftHistory.length && auctionTrackerInitialized.current) {
+        const availablePlayersForTracker = extendedPlayers.filter(p => {
+          const draftedIds = new Set(draftHistory.map(dp => dp.id));
+          return !draftedIds.has(p.id);
+        });
+        
+        // Re-initialize with updated available players
+        const teamIds = teams.map(t => t.id);
+        auctionMarketTracker.initialize(teamIds, 200, 16, availablePlayersForTracker);
+        
+        // Re-record all remaining drafts to rebuild the market state
+        draftHistory.forEach(draftedPlayer => {
+          if (draftedPlayer.purchasedBy && draftedPlayer.purchasePrice) {
+            auctionMarketTracker.recordDraft(
+              draftedPlayer,
+              draftedPlayer.purchasedBy,
+              draftedPlayer.purchasePrice
+            );
+          }
+        });
+        
+        console.log('Re-initialized auction tracker after undo with', availablePlayersForTracker.length, 'available players');
+        console.log('Re-recorded', draftHistory.length, 'drafts to rebuild market state');
+        
+        // Force update market conditions and position markets to trigger re-render
+        setMarketConditions(auctionMarketTracker.getMarketConditions());
+        setPositionMarkets(auctionMarketTracker.getPositionMarkets());
+      }
+    }
+    
+    // Update previous draft history reference
+    prevDraftHistory.current = draftHistory;
+    
+    // Get IDs of all drafted players from current draft history
     const draftedPlayerIds = new Set(draftHistory.map(p => p.id));
     
     // Update extendedPlayers to reflect current draft state
-    setExtendedPlayers(prev => prev.map(p => ({
-      ...p,
-      isDrafted: draftedPlayerIds.has(p.id),
-      purchasePrice: draftHistory.find(dp => dp.id === p.id)?.purchasePrice
-    })));
+    setExtendedPlayers(prev => {
+      // Update isDrafted status for all existing players
+      const updated = prev.map(p => ({
+        ...p,
+        isDrafted: draftedPlayerIds.has(p.id),
+        purchasePrice: draftedPlayerIds.has(p.id) ? 
+          draftHistory.find(dp => dp.id === p.id)?.purchasePrice : 
+          undefined
+      }));
+      
+      console.log('Updated isDrafted status - drafted:', draftedPlayerIds.size, 'available:', updated.filter(p => !p.isDrafted).length);
+      return updated;
+    });
+    
+    console.log('Updated extendedPlayers after draft history change. Drafted:', draftedPlayerIds.size);
   }, [draftHistory.length]); // Only depend on length to avoid initial render issues
+
+  // Helper function to check if player has a specific badge
+  const playerHasBadge = (player: ModernExtendedPlayer, badge: string): boolean => {
+    switch(badge) {
+      case 'overvalued':
+        return player.auctionValue >= 10 && player.cvsScore < (player.auctionValue * 2.5);
+      case 'sleeper':
+        return player.adp > 100 && player.adp < 200 && player.projectedPoints > 120;
+      case 'hot':
+        return (player.trending || 0) > 3000;
+      case 'trending':
+        return (player.trending || 0) > 1500 && (player.trending || 0) <= 3000;
+      case 'rising':
+        return (player.trending || 0) > 500 && (player.trending || 0) <= 1500;
+      case 'injury':
+        return player.injuryStatus !== undefined && player.injuryStatus !== 'Healthy';
+      case 'value':
+        return player.adp > 36 && player.adp < 150 && (
+          (player.position === 'QB' && player.projectedPoints > 240) ||
+          (player.position === 'RB' && player.projectedPoints > 180) ||
+          (player.position === 'WR' && player.projectedPoints > 200) ||
+          (player.position === 'TE' && player.projectedPoints > 140)
+        );
+      case 'pprstud':
+        return (player.receptions || 0) >= 75;
+      case 'bustrisk':
+        return player.adp < 50 && player.adp > 0 && (
+          (player.position === 'RB' && player.projectedPoints < 215) ||
+          (player.position === 'WR' && player.projectedPoints < 230) ||
+          (player.position === 'QB' && player.projectedPoints < 300) ||
+          (player.position === 'TE' && player.projectedPoints < 195)
+        );
+      case 'consistent':
+        return badgeDataService.isConsistentProducer(player.name);
+      case 'rzmonster':
+        return badgeDataService.isRedZoneMonster(player.name);
+      case 'volume':
+        return badgeDataService.isVolumeKing(player.name);
+      default:
+        return false;
+    }
+  };
 
   // Filter players based on search and filters
   const filteredPlayers = extendedPlayers.filter(player => {
     const matchesSearch = searchQuery === '' || 
-      player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      player.team.toLowerCase().includes(searchQuery.toLowerCase());
+      player.name.toLowerCase().includes(searchQuery.toLowerCase());
     
     // Use selectedPositions if any are selected, otherwise show all
     const matchesPosition = selectedPositions.size === 0 || selectedPositions.has(player.position);
     
-    const isAvailable = !showOnlyAvailable || !player.isDrafted;
+    // Fixed availability check
+    const isAvailable = showOnlyAvailable ? !player.isDrafted : true;
     
-    return matchesSearch && matchesPosition && isAvailable;
+    // Badge filter - if badges are selected, player must have at least one
+    let matchesBadge = true;
+    if (selectedBadges.size > 0) {
+      matchesBadge = false;
+      for (const badge of selectedBadges) {
+        if (playerHasBadge(player, badge)) {
+          matchesBadge = true;
+          break;
+        }
+      }
+    }
+    
+    return matchesSearch && matchesPosition && isAvailable && matchesBadge;
   });
 
   // Get available players only
   const availablePlayers = extendedPlayers.filter(p => !p.isDrafted);
 
+  // Log filtering results
+  useEffect(() => {
+    console.log('Filtered players count:', filteredPlayers.length, 'showOnlyAvailable:', showOnlyAvailable);
+  }, [filteredPlayers.length, showOnlyAvailable]);
+  
   // Sort players based on current sort column and direction
   const sortedPlayers = [...filteredPlayers].sort((a, b) => {
     let aVal: any;
@@ -423,7 +667,7 @@ export function ModernApp() {
     if (price !== undefined) {
       await draftPlayer(player.id, teamId || 'my-team', price);
       
-      // Update extended players
+      // Mark player as drafted in extendedPlayers
       setExtendedPlayers(prev => prev.map(p => 
         p.id === player.id ? { ...p, isDrafted: true, purchasePrice: price } : p
       ));
@@ -462,9 +706,13 @@ export function ModernApp() {
         const wasPlayerDrafted = draftPriceModal.player && updatedState.draftHistory.some(p => p.id === draftPriceModal.player!.id);
         
         if (wasPlayerDrafted && draftPriceModal.player) {
-          // Only update extended players if draft was successful
-          setExtendedPlayers(prev => prev.filter(p => p.id !== draftPriceModal.player!.id));
-          console.log('Draft successful, removed player from available list');
+          // Mark player as drafted instead of removing
+          setExtendedPlayers(prev => prev.map(p => 
+            p.id === draftPriceModal.player!.id 
+              ? { ...p, isDrafted: true, purchasePrice: draftPriceModal.price }
+              : p
+          ));
+          console.log('Draft successful, marked player as drafted');
         } else {
           console.error('Draft failed - player was not added to draft history, keeping in available list');
         }
@@ -500,7 +748,7 @@ export function ModernApp() {
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-draft-primary mx-auto"></div>
-          <p className="mt-4 text-dark-text">Loading draft assistant...</p>
+          <p className="mt-4 text-dark-text">Loading optimizer...</p>
         </div>
       </div>
     );
@@ -512,16 +760,16 @@ export function ModernApp() {
       <header className="bg-dark-bg-secondary border-b border-dark-border sticky top-0 z-50 backdrop-blur-lg bg-opacity-90">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Trophy className="w-8 h-8 text-yellow-500" />
-              <h1 className="text-base font-bold text-dark-text">NFL Fantasy Auction Draft and Roster Optimizer</h1>
+            <div className="flex items-center space-x-3 flex-1">
+              <Trophy className="w-6 h-6 text-yellow-500" />
+              <h1 className="text-base font-bold text-dark-text whitespace-nowrap">Fantasy Auction Draft and Roster Optimizer</h1>
             </div>
             
             <div className="flex items-center space-x-4">
               {/* Data Quality Indicator */}
               <button
                 onClick={() => setShowDataQuality(!showDataQuality)}
-                className={`px-3 py-1 text-sm rounded-full font-medium transition-colors ${
+                className={`px-2 py-0.5 text-xs rounded-full font-medium transition-colors ${
                   !dataQualityIssues.legitimacy
                     ? 'bg-red-600/30 text-red-300 hover:bg-red-600/40 animate-pulse'
                     : dataQualityIssues.hallucinations > 0
@@ -535,15 +783,15 @@ export function ModernApp() {
                 title="Click to view data quality details"
               >
                 {!dataQualityIssues.legitimacy ? (
-                  <>🚫 Unverified Data</>
+                  <span className="text-[10px]">🚫 Unverified</span>
                 ) : dataQualityIssues.hallucinations > 0 ? (
-                  <>🧠 {dataQualityIssues.hallucinations} Hallucinations</>
+                  <span className="text-[10px]">🧠 {dataQualityIssues.hallucinations} Issues</span>
                 ) : dataQualityIssues.errors > 0 ? (
-                  <>⚠️ {dataQualityIssues.errors} Data Issues</>
+                  <span className="text-[10px]">⚠️ {dataQualityIssues.errors} Issues</span>
                 ) : dataQualityIssues.warnings > 0 ? (
-                  <>📊 {dataQualityIssues.warnings} Warnings</>
+                  <span className="text-[10px]">📊 {dataQualityIssues.warnings} Warn</span>
                 ) : (
-                  <>✅ Data Quality</>
+                  <span className="text-[10px]">✓ Data OK</span>
                 )}
               </button>
               
@@ -568,7 +816,7 @@ export function ModernApp() {
                 <button
                   onClick={() => setShowTeamCommandCenter(true)}
                   className="p-2 rounded-md transition-colors text-dark-text-secondary hover:bg-draft-primary hover:text-white"
-                  title="Team Command Center"
+                  title="My Team"
                 >
                   <Users className="w-4 h-4" />
                 </button>
@@ -582,43 +830,64 @@ export function ModernApp() {
       {
         <div className="container mx-auto px-4 py-6">
           <div className="grid grid-cols-12 gap-4">
-            {/* Left Sidebar - My Team + Smart Recommendations */}
+            {/* Left Sidebar - Smart Recommendations + My Team */}
             <div className="col-span-12 lg:col-span-3 space-y-4">
-              {/* My Team Box - Above Smart Recommendations */}
+              {/* Smart Recommendations - Above My Team */}
+              <ComprehensiveHorizontalRecommendations
+                availablePlayers={availablePlayers}
+                myTeamId="my-team"
+                mode="auction"
+              />
+              
+              {/* My Team Box - Below Smart Recommendations */}
               <div className="bg-dark-bg-secondary rounded-xl p-4 border border-dark-border">
-                <h3 className="text-base font-semibold text-dark-text mb-3 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-draft-primary" />
-                  My Team ({myTeam.roster.length}/16)
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-semibold text-dark-text flex items-center gap-2">
+                    <Users className="w-5 h-5 text-draft-primary" />
+                    My Team ({myTeam.roster.length}/16)
+                  </h3>
+                  <span className="text-xs font-bold text-yellow-500">
+                    Need: {(() => {
+                      const positionCounts: Record<string, number> = {
+                        QB: 0, RB: 0, WR: 0, TE: 0, K: 0, DST: 0
+                      };
+                      myTeam.roster.forEach(p => {
+                        positionCounts[p.position]++;
+                      });
+                      // Full roster requirements: 16 players total
+                      // 2 QB, 4 RB, 4 WR, 2 TE, 1 K, 1 DST = 14 + 2 FLEX (RB/WR/TE)
+                      const requirements = { QB: 2, RB: 4, WR: 4, TE: 2, K: 1, DST: 1 };
+                      const critical: string[] = [];
+                      Object.entries(requirements).forEach(([pos, needed]) => {
+                        if (positionCounts[pos] < needed) {
+                          critical.push(pos);
+                        }
+                      });
+                      return critical.length > 0 ? critical.join(', ') : 'Complete';
+                    })()}
+                  </span>
+                </div>
                 
                 {/* Position Requirements - One per line */}
                 <div className="space-y-2 mb-4">
                   {[
-                    { pos: 'QB', needed: 2 },  // 1 starter + 1 bench
-                    { pos: 'RB', needed: 4 },  // 2 starters + 2 bench
-                    { pos: 'WR', needed: 4 },  // 2 starters + 2 bench  
-                    { pos: 'TE', needed: 2 },  // 1 starter + 1 bench
-                    { pos: 'FLEX', needed: 2 }, // 1 starter (RB/WR/TE) + 1 bench
-                    { pos: 'K', needed: 1 },   // 1 starter
-                    { pos: 'DST', needed: 1 }  // 1 starter
+                    { pos: 'QB', needed: 2 },
+                    { pos: 'RB', needed: 4 },
+                    { pos: 'WR', needed: 4 },
+                    { pos: 'TE', needed: 2 },
+                    { pos: 'FLEX', needed: 2 },
+                    { pos: 'K', needed: 1 },
+                    { pos: 'DST', needed: 1 }
                   ].map(({ pos, needed }) => {
-                    let players, count;
-                    if (pos === 'FLEX') {
-                      // For FLEX, count only extra RB/WR/TE beyond their main requirements
-                      const rbCount = myTeam.roster.filter(p => p.position === 'RB').length;
-                      const wrCount = myTeam.roster.filter(p => p.position === 'WR').length;
-                      const teCount = myTeam.roster.filter(p => p.position === 'TE').length;
-                      const flexEligible = Math.max(0, rbCount - 4) + Math.max(0, wrCount - 4) + Math.max(0, teCount - 2);
-                      count = Math.min(flexEligible, needed);
-                      // Get the actual flex players (those beyond position requirements)
-                      const rbs = myTeam.roster.filter(p => p.position === 'RB').slice(4);
-                      const wrs = myTeam.roster.filter(p => p.position === 'WR').slice(4);
-                      const tes = myTeam.roster.filter(p => p.position === 'TE').slice(2);
-                      players = [...rbs, ...wrs, ...tes].slice(0, needed);
-                    } else {
-                      players = myTeam.roster.filter(p => p.position === pos);
-                      count = players.length;
-                    }
+                      let players, count;
+                      if (pos === 'FLEX') {
+                        // Simplified FLEX calculation
+                        players = [];
+                        count = 0;
+                      } else {
+                        players = myTeam.roster.filter(p => p.position === pos);
+                        count = players.length;
+                      }
                     
                     return (
                       <div key={pos} className="border-b border-dark-border pb-2">
@@ -630,20 +899,20 @@ export function ModernApp() {
                               {pos}
                             </span>
                             <span className={`text-xs ${
-                              count < needed ? 'text-red-400' : 
-                              count === needed ? 'text-yellow-400' : 
-                              'text-green-400'
+                              count >= needed ? 'text-green-400' : 
+                              count > 0 ? 'text-yellow-400' : 
+                              'text-gray-400'
                             }`}>
-                              {count}/{needed}
+                              {count}/{needed} 
                             </span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <div className="w-60 bg-dark-bg-tertiary rounded-full h-5">
+                          <div className="flex-1 min-w-0">
+                            <div className="w-full bg-dark-bg-tertiary rounded-full h-3 overflow-hidden">
                               <div 
-                                className={`h-5 rounded-full ${
-                                  count >= needed ? 'bg-green-500' : 
-                                  count > 0 ? 'bg-yellow-500' : 
-                                  'bg-red-500'
+                                className={`h-3 rounded-full transition-all ${
+                                  count === 0 ? 'bg-gray-500' :
+                                  count < needed ? 'bg-yellow-500' : 
+                                  'bg-green-500'
                                 }`}
                                 style={{ width: `${Math.min(100, (count / needed) * 100)}%` }}
                               />
@@ -667,35 +936,40 @@ export function ModernApp() {
                 
                 {/* Team Stats */}
                 <div className="pt-2">
+                  <div className="space-y-1 mb-2">
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-dark-text-secondary">Budget Remaining</span>
+                      <span className="text-[10px] font-bold text-dark-text">
+                        ${myTeam.budget - myTeam.spentBudget}
+                      </span>
+                    </div>
+                    <div className="w-full bg-dark-bg-tertiary rounded-full h-1 overflow-hidden">
+                      <div 
+                        className={`h-1 rounded-full transition-all ${
+                          (myTeam.budget - myTeam.spentBudget) > 140 ? 'bg-green-500' :
+                          (myTeam.budget - myTeam.spentBudget) > 50 ? 'bg-green-500' :
+                          'bg-red-500'
+                        }`}
+                        style={{ width: `${Math.min(100, ((myTeam.budget - myTeam.spentBudget) / 200) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
                   <div className="flex justify-between mb-2">
                     <span className="text-[10px] text-dark-text-secondary">Total Projected</span>
                     <span className="text-[10px] font-bold text-dark-text">
                       {Math.round(myTeam.roster.reduce((sum, p) => sum + p.projectedPoints, 0))}
                     </span>
                   </div>
-                  <div className="flex justify-between mb-2">
+                  <div className="flex justify-between">
                     <span className="text-[10px] text-dark-text-secondary">PPR Bonus</span>
                     <span className="text-[10px] font-bold text-green-500">
                       +{Math.round(myTeam.roster.reduce((sum, p) => sum + ((p as any).receptions || 0), 0))}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-[10px] text-dark-text-secondary">Budget Remaining</span>
-                    <span className="text-[10px] font-bold text-dark-text">
-                      ${myTeam.budget - myTeam.spentBudget}
-                    </span>
-                  </div>
                 </div>
               </div>
               
-              {/* Smart Recommendations - Below My Team */}
-              <ComprehensiveHorizontalRecommendations
-                availablePlayers={availablePlayers}
-                myTeamId="my-team"
-                mode="auction"
-              />
-              
-              {/* Value Finder - Below Smart Recommendations */}
+              {/* Value Finder - Below My Team */}
               <ValueFinder />
             </div>
 
@@ -703,107 +977,33 @@ export function ModernApp() {
             <div className="col-span-12 lg:col-span-7 space-y-4">
               {/* Comparison Toolbar */}
               {selectedForComparison.size > 0 && (
-                <div className="bg-draft-primary/10 border border-draft-primary rounded-xl p-1.5 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-dark-text text-[11px]">
-                      {selectedForComparison.size} player{selectedForComparison.size !== 1 ? 's' : ''} selected
-                    </span>
-                    {selectedForComparison.size >= 2 && (
-                      <button
-                        onClick={openComparison}
-                        className="bg-draft-primary hover:bg-blue-700 text-white px-2 py-0.5 rounded-lg text-[11px] font-medium transition-colors"
-                      >
-                        Compare Players
-                      </button>
-                    )}
-                  </div>
+                <div className="inline-flex bg-draft-primary/10 border border-draft-primary rounded-xl p-1 items-center gap-3">
+                  <span className="text-dark-text text-[10px] pl-1">
+                    {selectedForComparison.size} player{selectedForComparison.size !== 1 ? 's' : ''} selected
+                  </span>
+                  {selectedForComparison.size >= 2 && (
+                    <button
+                      onClick={openComparison}
+                      className="bg-draft-primary hover:bg-blue-700 text-white px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors"
+                    >
+                      Compare Players
+                    </button>
+                  )}
                   <button
                     onClick={clearSelection}
-                    className="text-dark-text-secondary hover:text-dark-text transition-colors text-[11px]"
+                    className="text-dark-text-secondary hover:text-dark-text transition-colors text-[10px] pr-1"
                   >
-                    Clear Selection
+                    Clear
                   </button>
                 </div>
               )}
 
-              {/* Search and Filters */}
-              <div className="bg-dark-bg-secondary rounded-xl p-4 border border-dark-border">
-                {/* Position Filter Badges and Available Only */}
-                <div className="mb-3">
-                  <div className="grid grid-cols-7 gap-2 w-full">
-                    {(['QB', 'RB', 'WR', 'TE', 'K', 'DST'] as Position[]).map(position => (
-                      <button
-                        key={position}
-                        onClick={() => {
-                          const newSelection = new Set(selectedPositions);
-                          if (newSelection.has(position)) {
-                            newSelection.delete(position);
-                          } else {
-                            newSelection.add(position);
-                          }
-                          setSelectedPositions(newSelection);
-                        }}
-                        className={`text-xs font-bold py-1.5 rounded transition-all ${
-                          selectedPositions.has(position)
-                            ? `bg-position-${position.toLowerCase()} text-white`
-                            : `bg-position-${position.toLowerCase()} text-white opacity-40 hover:opacity-70`
-                        }`}
-                      >
-                        {position}
-                      </button>
-                    ))}
-                    {/* Available Only Toggle */}
-                    <button
-                      onClick={() => setShowOnlyAvailable(!showOnlyAvailable)}
-                      className={`text-xs font-bold py-1.5 rounded transition-all ${
-                        showOnlyAvailable 
-                          ? 'bg-green-600 text-white' 
-                          : 'bg-green-600 text-white opacity-40 hover:opacity-70'
-                      }`}
-                    >
-                      Available
-                    </button>
-                  </div>
-                  
-                  {selectedPositions.size > 0 && (
-                    <div className="mt-2">
-                      <button
-                        onClick={() => setSelectedPositions(new Set())}
-                        className="text-xs text-dark-text-secondary hover:text-dark-text"
-                      >
-                        Clear Filters
-                      </button>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Search Bar - Full Width */}
-                <div className="relative">
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    placeholder="Search players..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-1.5 pr-8 text-sm text-dark-text placeholder-dark-text-secondary focus:border-draft-primary focus:outline-none"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-dark-text-secondary hover:text-dark-text transition-colors p-0.5"
-                      title="Clear search"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
               
               {/* Player Cards */}
               {viewMode === 'grid' ? (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <AnimatePresence>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <AnimatePresence mode="wait">
                       {sortedPlayers.slice(0, displayCount).map(player => (
                       <motion.div
                         key={player.id}
@@ -835,63 +1035,271 @@ export function ModernApp() {
                 </>
               ) : (
                 <div className="bg-dark-bg-secondary rounded-xl border border-dark-border overflow-hidden">
-                  <div className="px-4 py-2 bg-dark-bg-tertiary border-b border-dark-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-dark-text-secondary">
+                  <div className="px-4 py-3 bg-dark-bg-tertiary border-b border-dark-border min-h-[48px]">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs text-dark-text-secondary whitespace-nowrap">
                         Showing {Math.min(displayCount, sortedPlayers.length)} of {sortedPlayers.length} players
                       </span>
-                      <span className="text-xs text-dark-text-secondary">
+                      {/* Position Filter Buttons - Stretched */}
+                      <div className="flex items-center gap-1 flex-1">
+                        {(['QB', 'RB', 'WR', 'TE', 'K', 'DST'] as Position[]).map(position => (
+                          <button
+                            key={position}
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log(`${position} button clicked`);
+                              const newSelection = new Set(selectedPositions);
+                              if (newSelection.has(position)) {
+                                newSelection.delete(position);
+                              } else {
+                                newSelection.add(position);
+                              }
+                              setSelectedPositions(newSelection);
+                            }}
+                            className={`text-[8px] font-bold py-0 px-1 rounded flex-1 h-4 min-h-[1rem] bg-position-${position.toLowerCase()} text-white cursor-pointer ${
+                              selectedPositions.has(position)
+                                ? 'opacity-100'
+                                : 'opacity-40 hover:opacity-70'
+                            }`}
+                          >
+                            {position}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const newState = !showOnlyAvailable;
+                            console.log('Available button clicked. Current state:', showOnlyAvailable, 'New state:', newState);
+                            try {
+                              console.log('Total players:', extendedPlayers.length);
+                              console.log('Drafted players:', extendedPlayers.filter(p => p.isDrafted).length);
+                              console.log('Available players:', extendedPlayers.filter(p => !p.isDrafted).length);
+                              console.log('First player isDrafted:', extendedPlayers[0]?.isDrafted);
+                            } catch (error) {
+                              console.error('Error checking players:', error);
+                            }
+                            setShowOnlyAvailable(newState);
+                            console.log('State set to:', newState);
+                          }}
+                          className={`text-[8px] font-bold py-0 px-1 rounded flex-1 h-4 min-h-[1rem] bg-green-600 text-white cursor-pointer z-50 ${
+                            showOnlyAvailable 
+                              ? 'opacity-100' 
+                              : 'opacity-40 hover:opacity-70'
+                          }`}
+                        >
+                          Available
+                        </button>
+                        <div className="w-[24px]">
+                          {selectedPositions.size > 0 && (
+                            <button
+                              onClick={() => setSelectedPositions(new Set())}
+                              className="text-[7px] text-dark-text-secondary hover:text-dark-text px-0.5 w-full h-3"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-xs text-dark-text-secondary whitespace-nowrap">
                         Sorted by: <span className="font-medium text-dark-text">
                           {sortColumn === 'cvsScore' ? 'CVS Score' :
                            sortColumn === 'projectedPoints' ? 'Projected Points' :
                            sortColumn === 'adp' ? 'ADP' :
                            sortColumn === 'round' ? 'Round' :
                            sortColumn === 'receptions' ? 'PPR Receptions' :
+                           sortColumn === 'byeWeek' ? 'Bye Week' :
+                           sortColumn === 'experience' ? 'Experience' :
+                           sortColumn === 'sos' ? 'Strength of Schedule' :
                            sortColumn.charAt(0).toUpperCase() + sortColumn.slice(1)}
                         </span> ({sortDirection === 'asc' ? '↑' : '↓'})
                       </span>
                     </div>
-                    {/* Badge Legend */}
-                    <div className="flex items-center gap-3 text-[9px] text-dark-text-secondary">
-                      <span className="flex items-center gap-1 cursor-help" title="First year in the NFL">
-                        <span className="px-1 py-0.5 bg-yellow-500/20 text-yellow-400 rounded font-bold">R</span> Rookie
-                      </span>
-                      <span className="flex items-center gap-1 cursor-help" title="High price but CVS doesn't justify it">
-                        <span className="px-1 py-0.5 bg-red-600/20 text-red-500 rounded font-bold">📉</span> Overvalued
-                      </span>
-                      <span className="flex items-center gap-1 cursor-help" title="ADP 100-200 with 120+ points">
-                        <span className="px-1 py-0.5 bg-green-500/20 text-green-400 rounded font-bold">💎</span> Sleeper
-                      </span>
+                    <hr className="border-dark-border mt-2" />
+                    {/* Badge Legend - Clickable for filtering */}
+                    <div className="flex flex-wrap items-center gap-3 text-[9px] text-dark-text-secondary mt-2">
+                      <button
+                        onClick={() => {
+                          const newSet = new Set(selectedBadges);
+                          if (newSet.has('overvalued')) newSet.delete('overvalued');
+                          else newSet.add('overvalued');
+                          setSelectedBadges(newSet);
+                        }}
+                        className={`flex items-center gap-1 cursor-pointer transition-all hover:opacity-80 ${
+                          selectedBadges.has('overvalued') ? 'ring-2 ring-red-500 rounded px-1' : ''
+                        }`}
+                        title="Click to filter - High price but CVS doesn't justify it"
+                      >
+                        <span className="px-0.5 py-0 bg-red-600/20 text-red-500 rounded font-bold text-[8px]">📉</span> <span className="text-[8px]">Overvalued</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newSet = new Set(selectedBadges);
+                          if (newSet.has('sleeper')) newSet.delete('sleeper');
+                          else newSet.add('sleeper');
+                          setSelectedBadges(newSet);
+                        }}
+                        className={`flex items-center gap-1 cursor-pointer transition-all hover:opacity-80 ${
+                          selectedBadges.has('sleeper') ? 'ring-2 ring-green-400 rounded px-1' : ''
+                        }`}
+                        title="Click to filter - ADP 100-200 with 120+ points"
+                      >
+                        <span className="px-0.5 py-0 bg-green-500/20 text-green-400 rounded font-bold text-[8px]">💎</span> <span className="text-[8px]">Sleeper</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newSet = new Set(selectedBadges);
+                          if (newSet.has('hot')) newSet.delete('hot');
+                          else newSet.add('hot');
+                          setSelectedBadges(newSet);
+                        }}
+                        className={`flex items-center gap-1 cursor-pointer transition-all hover:opacity-80 ${
+                          selectedBadges.has('hot') ? 'ring-2 ring-red-400 rounded px-1' : ''
+                        }`}
+                        title="Click to filter - 3000+ adds/drops recently"
+                      >
+                        <span className="px-0.5 py-0 bg-red-600/20 text-red-400 rounded font-bold text-[8px]">🔥</span> <span className="text-[8px]">Hot</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newSet = new Set(selectedBadges);
+                          if (newSet.has('trending')) newSet.delete('trending');
+                          else newSet.add('trending');
+                          setSelectedBadges(newSet);
+                        }}
+                        className={`flex items-center gap-1 cursor-pointer transition-all hover:opacity-80 ${
+                          selectedBadges.has('trending') ? 'ring-2 ring-orange-400 rounded px-1' : ''
+                        }`}
+                        title="Click to filter - 1500-3000 adds/drops recently"
+                      >
+                        <span className="px-0.5 py-0 bg-orange-600/20 text-orange-400 rounded font-bold text-[8px]">📈</span> <span className="text-[8px]">Trending</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newSet = new Set(selectedBadges);
+                          if (newSet.has('rising')) newSet.delete('rising');
+                          else newSet.add('rising');
+                          setSelectedBadges(newSet);
+                        }}
+                        className={`flex items-center gap-1 cursor-pointer transition-all hover:opacity-80 ${
+                          selectedBadges.has('rising') ? 'ring-2 ring-yellow-400 rounded px-1' : ''
+                        }`}
+                        title="Click to filter - 500-1500 adds/drops recently"
+                      >
+                        <span className="px-0.5 py-0 bg-yellow-600/20 text-yellow-400 rounded font-bold text-[8px]">⬆️</span> <span className="text-[8px]">Rising</span>
+                      </button>
                       <span className="text-gray-500">|</span>
-                      <span className="flex items-center gap-1 cursor-help" title="Injury statuses from Sleeper API">
-                        <span className="px-1 py-0.5 bg-yellow-500/20 text-yellow-400 rounded font-bold">Q</span>/
-                        <span className="px-1 py-0.5 bg-orange-500/20 text-orange-400 rounded font-bold">D</span>/
-                        <span className="px-1 py-0.5 bg-red-500/20 text-red-400 rounded font-bold">O</span> Injury
-                      </span>
-                      <span className="flex items-center gap-1 cursor-help" title="ADP > 36 with high points for position">
-                        <span className="px-1 py-0.5 bg-emerald-500/20 text-emerald-400 rounded font-bold">💰</span> Value
-                      </span>
-                      <span className="flex items-center gap-1 cursor-help" title="50+ projected receptions">
-                        <span className="px-1 py-0.5 bg-blue-500/20 text-blue-400 rounded font-bold">PPR</span> PPR Stud
-                      </span>
-                      <span className="flex items-center gap-1 cursor-help" title="Age ≤ 24 with 80+ points">
-                        <span className="px-1 py-0.5 bg-cyan-500/20 text-cyan-400 rounded font-bold">Y</span> Young
-                      </span>
-                      <span className="flex items-center gap-1 cursor-help" title="Age ≥ 31">
-                        <span className="px-1 py-0.5 bg-gray-500/20 text-gray-400 rounded font-bold">V</span> Veteran
-                      </span>
-                      <span className="flex items-center gap-1 cursor-help" title="ADP < 50 with low projected points">
-                        <span className="px-1 py-0.5 bg-red-500/20 text-red-400 rounded font-bold">⚠</span> Bust Risk
-                      </span>
-                      <span className="flex items-center gap-1 cursor-help" title="Elite consistency in 2024 (14+ games, 10+ PPG, low variance)">
-                        <span className="px-1 py-0.5 bg-blue-500/20 text-blue-400 rounded font-bold">📊</span> Consistent
-                      </span>
-                      <span className="flex items-center gap-1 cursor-help" title="Red zone dominator (20%+ RZ usage or 18+ RZ touches with 7+ TDs)">
-                        <span className="px-1 py-0.5 bg-red-600/20 text-red-400 rounded font-bold">🎯</span> RZ Monster
-                      </span>
-                      <span className="flex items-center gap-1 cursor-help" title="Top 20% in projected touches for 2025">
-                        <span className="px-1 py-0.5 bg-purple-500/20 text-purple-400 rounded font-bold">👑</span> Volume King
-                      </span>
+                      <button
+                        onClick={() => {
+                          const newSet = new Set(selectedBadges);
+                          if (newSet.has('injury')) newSet.delete('injury');
+                          else newSet.add('injury');
+                          setSelectedBadges(newSet);
+                        }}
+                        className={`flex items-center gap-1 cursor-pointer transition-all hover:opacity-80 ${
+                          selectedBadges.has('injury') ? 'ring-2 ring-orange-400 rounded px-1' : ''
+                        }`}
+                        title="Click to filter - Injury statuses from Sleeper API"
+                      >
+                        <span className="px-0.5 py-0 bg-yellow-500/20 text-yellow-400 rounded font-bold text-[8px]">Q</span>/
+                        <span className="px-0.5 py-0 bg-orange-500/20 text-orange-400 rounded font-bold text-[8px]">D</span>/
+                        <span className="px-0.5 py-0 bg-red-500/20 text-red-400 rounded font-bold text-[8px]">O</span> <span className="text-[8px]">Injury</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newSet = new Set(selectedBadges);
+                          if (newSet.has('value')) newSet.delete('value');
+                          else newSet.add('value');
+                          setSelectedBadges(newSet);
+                        }}
+                        className={`flex items-center gap-1 cursor-pointer transition-all hover:opacity-80 ${
+                          selectedBadges.has('value') ? 'ring-2 ring-emerald-400 rounded px-1' : ''
+                        }`}
+                        title="Click to filter - ADP > 36 with high points for position"
+                      >
+                        <span className="px-0.5 py-0 bg-emerald-500/20 text-emerald-400 rounded font-bold text-[8px]">💰</span> <span className="text-[8px]">Value</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newSet = new Set(selectedBadges);
+                          if (newSet.has('pprstud')) newSet.delete('pprstud');
+                          else newSet.add('pprstud');
+                          setSelectedBadges(newSet);
+                        }}
+                        className={`flex items-center gap-1 cursor-pointer transition-all hover:opacity-80 ${
+                          selectedBadges.has('pprstud') ? 'ring-2 ring-blue-400 rounded px-1' : ''
+                        }`}
+                        title="Click to filter - 75+ projected receptions"
+                      >
+                        <span className="px-0.5 py-0 bg-blue-500/20 text-blue-400 rounded font-bold text-[8px]">PPR</span> <span className="text-[8px]">PPR Stud</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newSet = new Set(selectedBadges);
+                          if (newSet.has('bustrisk')) newSet.delete('bustrisk');
+                          else newSet.add('bustrisk');
+                          setSelectedBadges(newSet);
+                        }}
+                        className={`flex items-center gap-1 cursor-pointer transition-all hover:opacity-80 ${
+                          selectedBadges.has('bustrisk') ? 'ring-2 ring-red-400 rounded px-1' : ''
+                        }`}
+                        title="Click to filter - ADP < 50 with low projected points"
+                      >
+                        <span className="px-0.5 py-0 bg-red-500/20 text-red-400 rounded font-bold text-[8px]">⚠</span> <span className="text-[8px]">Bust Risk</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newSet = new Set(selectedBadges);
+                          if (newSet.has('consistent')) newSet.delete('consistent');
+                          else newSet.add('consistent');
+                          setSelectedBadges(newSet);
+                        }}
+                        className={`flex items-center gap-1 cursor-pointer transition-all hover:opacity-80 ${
+                          selectedBadges.has('consistent') ? 'ring-2 ring-blue-400 rounded px-1' : ''
+                        }`}
+                        title="Click to filter - Elite consistency in 2024 (14+ games, 10+ PPG, low variance)"
+                      >
+                        <span className="px-0.5 py-0 bg-blue-500/20 text-blue-400 rounded font-bold text-[8px]">📊</span> <span className="text-[8px]">Consistent</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newSet = new Set(selectedBadges);
+                          if (newSet.has('rzmonster')) newSet.delete('rzmonster');
+                          else newSet.add('rzmonster');
+                          setSelectedBadges(newSet);
+                        }}
+                        className={`flex items-center gap-1 cursor-pointer transition-all hover:opacity-80 ${
+                          selectedBadges.has('rzmonster') ? 'ring-2 ring-red-400 rounded px-1' : ''
+                        }`}
+                        title="Click to filter - Red zone dominator (20%+ RZ usage or 18+ RZ touches with 7+ TDs)"
+                      >
+                        <span className="px-0.5 py-0 bg-red-600/20 text-red-400 rounded font-bold text-[8px]">🎯</span> <span className="text-[8px]">RZ Monster</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newSet = new Set(selectedBadges);
+                          if (newSet.has('volume')) newSet.delete('volume');
+                          else newSet.add('volume');
+                          setSelectedBadges(newSet);
+                        }}
+                        className={`flex items-center gap-1 cursor-pointer transition-all hover:opacity-80 ${
+                          selectedBadges.has('volume') ? 'ring-2 ring-purple-400 rounded px-1' : ''
+                        }`}
+                        title="Click to filter - Top 10% in projected touches for 2025"
+                      >
+                        <span className="px-0.5 py-0 bg-purple-500/20 text-purple-400 rounded font-bold text-[8px]">👑</span> <span className="text-[8px]">Volume King</span>
+                      </button>
+                      {selectedBadges.size > 0 && (
+                        <button
+                          onClick={() => setSelectedBadges(new Set())}
+                          className="text-[7px] text-white hover:text-gray-300 ml-1"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="overflow-x-auto">
@@ -915,127 +1323,171 @@ export function ModernApp() {
                           />
                         </th>
                         <th 
-                          className="text-left px-1 py-1 text-dark-text text-sm font-medium cursor-pointer hover:bg-dark-bg transition-colors min-w-[100px]"
-                          onClick={() => handleSort('name')}
+                          className="text-left px-1 py-1 text-dark-text text-xs font-medium hover:bg-dark-bg transition-colors min-w-[300px]"
                         >
-                          <div className="flex items-center gap-1">
-                            Player
-                            {sortColumn === 'name' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                            ) : <ArrowUpDown className="w-4 h-4 opacity-50" />}
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => handleSort('name')}>
+                              Player
+                              {sortColumn === 'name' ? (
+                                sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                              ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                            </div>
+                            <div className="relative flex-grow">
+                              <input
+                                type="text"
+                                placeholder="Search players..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-full bg-dark-bg-tertiary border border-dark-border rounded pl-2 pr-6 py-0.5 text-[11px] text-dark-text placeholder-dark-text-secondary focus:border-white focus:outline-none"
+                              />
+                              {searchQuery && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSearchQuery('');
+                                  }}
+                                  className="absolute right-1 top-1/2 -translate-y-1/2 text-dark-text-secondary hover:text-dark-text transition-colors"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-sm font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8"
+                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8"
                           onClick={() => handleSort('position')}
                         >
                           <div className="flex items-center justify-center gap-1">
                             Pos
                             {sortColumn === 'position' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                            ) : <ArrowUpDown className="w-4 h-4 opacity-50" />}
+                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-sm font-medium cursor-pointer hover:bg-dark-bg transition-colors w-10"
+                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-10"
                           onClick={() => handleSort('team')}
                         >
                           <div className="flex items-center justify-center gap-1">
                             Team
                             {sortColumn === 'team' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                            ) : <ArrowUpDown className="w-4 h-4 opacity-50" />}
+                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-sm font-medium cursor-pointer hover:bg-dark-bg transition-colors w-9"
+                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-9"
                           onClick={() => handleSort('cvsScore')}
                         >
                           <div className="flex items-center justify-center gap-1">
                             <span className="cursor-help" title="Composite Value Score (0-100) - Weighted formula: Auction Value 23% + ADP 23% + Projected Points 28% + Position Scarcity 8% + Strength of Schedule 10% + Year-over-Year Trend 8%">CVS</span>
                             {sortColumn === 'cvsScore' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                            ) : <ArrowUpDown className="w-4 h-4 opacity-50" />}
+                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-sm font-medium cursor-pointer hover:bg-dark-bg transition-colors w-9"
+                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-9"
                           onClick={() => handleSort('projectedPoints')}
                         >
                           <div className="flex items-center justify-center gap-1">
                             <span className="cursor-help" title="Projected fantasy points for the season">Proj</span>
                             {sortColumn === 'projectedPoints' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                            ) : <ArrowUpDown className="w-4 h-4 opacity-50" />}
+                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-sm font-medium cursor-pointer hover:bg-dark-bg transition-colors w-9"
+                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-9"
                           onClick={() => handleSort('receptions')}
                         >
                           <div className="flex items-center justify-center gap-1">
                             <span className="cursor-help" title="Points Per Reception bonus points">PPR</span>
                             {sortColumn === 'receptions' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                            ) : <ArrowUpDown className="w-4 h-4 opacity-50" />}
+                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-sm font-medium cursor-pointer hover:bg-dark-bg transition-colors w-11"
+                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-11"
                           onClick={() => handleSort('auctionValue')}
                         >
                           <div className="flex items-center justify-center gap-1">
                             <span className="cursor-help" title="Auction draft dollar value ($200 budget)">$Value</span>
                             {sortColumn === 'auctionValue' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                            ) : <ArrowUpDown className="w-4 h-4 opacity-50" />}
+                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-sm font-medium cursor-pointer hover:bg-dark-bg transition-colors w-10"
+                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-10"
                           onClick={() => handleSort('adp')}
                         >
                           <div className="flex items-center justify-center gap-1">
                             <span className="cursor-help" title="Average Draft Position across leagues">ADP</span>
                             {sortColumn === 'adp' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                            ) : <ArrowUpDown className="w-4 h-4 opacity-50" />}
+                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-sm font-medium cursor-pointer hover:bg-dark-bg transition-colors w-7"
+                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-7"
                           onClick={() => handleSort('round')}
                         >
                           <div className="flex items-center justify-center gap-1">
                             <span className="cursor-help" title="Draft round based on 12-team league">Rd</span>
                             {sortColumn === 'round' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                            ) : <ArrowUpDown className="w-4 h-4 opacity-50" />}
+                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-sm font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8"
+                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8"
                           onClick={() => handleSort('age')}
                         >
                           <div className="flex items-center justify-center gap-1">
                             Age
                             {sortColumn === 'age' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                            ) : <ArrowUpDown className="w-4 h-4 opacity-50" />}
+                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-sm font-medium cursor-pointer hover:bg-dark-bg transition-colors w-10"
+                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8"
+                          onClick={() => handleSort('byeWeek')}
+                        >
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="cursor-help" title="Bye week for planning purposes">Bye</span>
+                            {sortColumn === 'byeWeek' ? (
+                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                          </div>
+                        </th>
+                        <th 
+                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8"
+                          onClick={() => handleSort('experience')}
+                        >
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="cursor-help" title="Years of NFL experience">Exp</span>
+                            {sortColumn === 'experience' ? (
+                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                          </div>
+                        </th>
+                        <th 
+                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8"
                           onClick={() => handleSort('sos')}
                         >
                           <div className="flex items-center justify-center gap-1">
                             <span className="cursor-help" title="Strength of Schedule (1=easiest, 10=hardest)">SOS</span>
                             {sortColumn === 'sos' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                            ) : <ArrowUpDown className="w-4 h-4 opacity-50" />}
+                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
                         </th>
-                        <th className="text-center px-0.5 py-1 text-dark-text text-sm font-medium w-12">Actions</th>
+                        <th className="text-center px-0.5 py-1 text-dark-text text-xs font-medium w-12">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1049,24 +1501,20 @@ export function ModernApp() {
                               onChange={() => togglePlayerSelection(player.id)}
                             />
                           </td>
-                          <td className="px-1 py-0.5 text-dark-text text-[15px] font-medium min-w-[50px]">
+                          <td className="px-1 py-0.5 text-dark-text text-[16px] font-medium min-w-[50px]">
                             <div className="flex items-center gap-1">
                               {player.name}
                               <div className="flex items-center gap-0.5">
-                                {/* Rookie Badge */}
-                                {(player as any).isRookie && (
-                                  <span className="text-[11px] px-1 py-0.5 bg-yellow-500/20 text-yellow-400 rounded font-bold cursor-help" title="Rookie Player - First year in the NFL">R</span>
-                                )}
                                 {/* Injury Badge */}
                                 {player.injuryStatus && player.injuryStatus !== 'Healthy' && (
-                                  <span className={`text-[11px] px-1 py-0.5 rounded font-bold cursor-help ${
+                                  <span className={`text-[8px] px-0.5 py-0 rounded font-bold cursor-help ${
                                     player.injuryStatus === 'Questionable' ? 'bg-yellow-500/20 text-yellow-400' :
                                     player.injuryStatus === 'Doubtful' ? 'bg-orange-500/20 text-orange-400' :
                                     player.injuryStatus === 'Out' || player.injuryStatus === 'IR' ? 'bg-red-500/20 text-red-400' :
                                     player.injuryStatus === 'PUP' ? 'bg-purple-500/20 text-purple-400' :
                                     player.injuryStatus === 'Suspended' ? 'bg-gray-500/20 text-gray-400' :
                                     'bg-gray-500/20 text-gray-400'
-                                  }`} title={`${player.injuryStatus}${player.injuryNotes ? `: ${player.injuryNotes}` : ''}`}>
+                                  }`} title={`${player.injuryStatus}${player.injuryNotes ? `: ${player.injuryNotes}` : ''}${player.injuryBodyPart ? ` (${player.injuryBodyPart})` : ''}${player.practiceDescription ? ` - ${player.practiceDescription}` : ''}`}>
                                     {player.injuryStatus === 'Questionable' ? 'Q' :
                                      player.injuryStatus === 'Doubtful' ? 'D' :
                                      player.injuryStatus === 'Out' ? 'O' :
@@ -1074,6 +1522,20 @@ export function ModernApp() {
                                      player.injuryStatus === 'PUP' ? 'PUP' :
                                      player.injuryStatus === 'Suspended' ? 'SUS' : '?'}
                                     {player.injuryNotes && '*'}
+                                  </span>
+                                )}
+                                
+                                {/* Trending Badge - Adjusted thresholds */}
+                                {player.trending && player.trending > 500 && (
+                                  <span 
+                                    className={`text-[9px] px-0.5 py-0 rounded font-bold cursor-help ${
+                                      player.trending > 3000 ? 'bg-red-600/20 text-red-400' :
+                                      player.trending > 1500 ? 'bg-orange-600/20 text-orange-400' :
+                                      'bg-yellow-600/20 text-yellow-400'
+                                    }`}
+                                    title={`Trending: ${player.trending.toLocaleString()} adds/drops recently`}
+                                  >
+                                    {player.trending > 3000 ? '🔥' : player.trending > 1500 ? '📈' : '⬆️'}
                                   </span>
                                 )}
                                 {/* Sleeper Badge (Late round value - ADP > 100 with good projections) */}
@@ -1109,44 +1571,36 @@ export function ModernApp() {
                                   player.cvsScore < (player.auctionValue * 2.5)
                                 ) && (
                                   <span className="text-[9px] px-0.5 py-0 bg-red-600/20 text-red-500 rounded font-bold cursor-help" 
-                                        title={`Overvalued - $${player.auctionValue} price but CVS ${Math.round(player.cvsScore)} (expected ${Math.round(player.auctionValue * 2.5)}+)`}>
+                                        title={`Overvalued - $${player.auctionValue} price but CVS ${player.cvsScore.toFixed(1)} (expected ${Math.round(player.auctionValue * 2.5)}+)`}>
                                     📉
                                   </span>
-                                )}
-                                {/* Young Talent (age <= 24 and decent projections) */}
-                                {player.age > 0 && player.age <= 24 && player.projectedPoints > 80 && !(player as any).isRookie && (
-                                  <span className="text-[11px] px-1 py-0.5 bg-cyan-500/20 text-cyan-400 rounded font-bold cursor-help" title="Young Talent - Age ≤ 24 with 80+ projected points (not rookie)">Y</span>
-                                )}
-                                {/* Veteran (age >= 31) */}
-                                {player.age >= 31 && (
-                                  <span className="text-[11px] px-1 py-0.5 bg-gray-500/20 text-gray-400 rounded font-bold cursor-help" title="Veteran - Age ≥ 31 (experienced but aging)">V</span>
                                 )}
                                 {/* New Badges from Canonical Data */}
                                 {/* Consistent Producer */}
                                 {badgeDataService.isConsistentProducer(player.name) && (
-                                  <span className="text-[11px] px-1 py-0.5 bg-blue-500/20 text-blue-400 rounded font-bold cursor-help" 
+                                  <span className="text-[8px] px-0.5 py-0 bg-blue-500/20 text-blue-400 rounded font-bold cursor-help" 
                                         title="Consistent Producer - Elite consistency in 2024 (14+ games, 10+ PPG, low variance)">📊</span>
                                 )}
                                 {/* RZ Monster */}
                                 {badgeDataService.isRedZoneMonster(player.name) && (
-                                  <span className="text-[11px] px-1 py-0.5 bg-red-600/20 text-red-400 rounded font-bold cursor-help" 
-                                        title="RZ Monster - Red zone dominator (20%+ RZ usage or 18+ RZ touches with 7+ TDs)">🎯</span>
+                                  <span className="text-[8px] px-0.5 py-0 bg-red-600/20 text-red-400 rounded font-bold cursor-help" 
+                                        title="RZ Monster - Red zone dominator (25%+ RZ usage or 30+ RZ touches with 10+ TDs)">🎯</span>
                                 )}
                                 {/* Volume King */}
                                 {badgeDataService.isVolumeKing(player.name) && (
-                                  <span className="text-[11px] px-1 py-0.5 bg-purple-500/20 text-purple-400 rounded font-bold cursor-help" 
-                                        title="Volume King - Top 20% in projected touches for 2025">👑</span>
+                                  <span className="text-[8px] px-0.5 py-0 bg-purple-500/20 text-purple-400 rounded font-bold cursor-help" 
+                                        title="Volume King - Top 10% in projected touches for 2025">👑</span>
                                 )}
                               </div>
                             </div>
                           </td>
                           <td className="text-center px-0.5 py-0.5 w-8">
-                            <span className={`text-xs font-bold px-1.5 py-0.5 rounded bg-position-${player.position.toLowerCase()} text-white`}>
+                            <span className={`text-sm font-bold px-1.5 py-0.5 rounded bg-position-${player.position.toLowerCase()} text-white`}>
                               {player.position}
                             </span>
                           </td>
-                          <td className="text-center px-0.5 py-0.5 text-sm text-dark-text-secondary w-10">{player.team}</td>
-                          <td className={`text-center px-0.5 py-0.5 text-[13px] font-bold w-9 ${
+                          <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text-secondary w-10">{player.team}</td>
+                          <td className={`text-center px-0.5 py-0.5 text-[14px] font-bold w-9 ${
                             player.cvsScore >= 90 ? 'text-emerald-400' :
                             player.cvsScore >= 80 ? 'text-green-500' : 
                             player.cvsScore >= 70 ? 'text-lime-500' :
@@ -1155,9 +1609,9 @@ export function ModernApp() {
                             player.cvsScore >= 40 ? 'text-orange-500' :
                             player.cvsScore >= 30 ? 'text-red-500' :
                             'text-gray-500'
-                          }`}>{isNaN(player.cvsScore) ? 'N/A' : Math.round(player.cvsScore)}</td>
-                          <td className="text-center px-0.5 py-0.5 text-sm text-dark-text w-9">{Math.round(player.projectedPoints)}</td>
-                          <td className={`text-center px-0.5 py-0.5 text-[13px] w-9 ${
+                          }`}>{isNaN(player.cvsScore) ? 'N/A' : player.cvsScore.toFixed(1)}</td>
+                          <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text w-9">{Math.round(player.projectedPoints)}</td>
+                          <td className={`text-center px-0.5 py-0.5 text-[14px] w-9 ${
                             (player.receptions || 0) >= 80 ? 'text-purple-400' :
                             (player.receptions || 0) >= 60 ? 'text-blue-400' :
                             (player.receptions || 0) >= 40 ? 'text-cyan-400' :
@@ -1200,7 +1654,17 @@ export function ModernApp() {
                           }`}>
                             {getAdpRoundRange(player.adp)}
                           </td>
-                          <td className="text-center px-0.5 py-0.5 text-sm text-dark-text-secondary w-8">{player.age}</td>
+                          <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text-secondary w-8">{player.age}</td>
+                          <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text-secondary w-8">
+                            <span className={`${
+                              player.byeWeek === 5 || player.byeWeek === 6 || player.byeWeek === 7 || player.byeWeek === 9 ? 'text-orange-400' :
+                              player.byeWeek === 10 || player.byeWeek === 11 || player.byeWeek === 12 || player.byeWeek === 14 ? 'text-yellow-400' :
+                              'text-dark-text-secondary'
+                            }`}>
+                              {player.byeWeek || player.bye || '-'}
+                            </span>
+                          </td>
+                          <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text-secondary w-8">{player.experience || 0}</td>
                           <td className="text-center px-0.5 py-0.5 w-10">
                             {player.sos !== undefined && player.sos !== null ? (
                               <div className={`inline-block w-7 h-5 rounded text-[11px] font-bold flex items-center justify-center ${
@@ -1233,7 +1697,7 @@ export function ModernApp() {
                     <div className="p-4 border-t border-dark-border">
                       <button
                         onClick={() => setDisplayCount(prev => prev + 30)}
-                        className="w-full bg-dark-bg hover:bg-dark-bg-tertiary text-dark-text font-medium py-2 px-4 rounded-lg transition-colors"
+                        className="w-full bg-dark-bg hover:bg-dark-bg-tertiary text-dark-text text-xs font-medium py-1.5 px-3 rounded-lg transition-colors"
                       >
                         Show More ({sortedPlayers.length - displayCount} remaining)
                       </button>
@@ -1243,7 +1707,7 @@ export function ModernApp() {
                     <div className="px-4 pb-4">
                       <button
                         onClick={() => setDisplayCount(30)}
-                        className="text-sm text-dark-text-secondary hover:text-dark-text"
+                        className="text-xs text-dark-text-secondary hover:text-dark-text"
                       >
                         Show Less
                       </button>
@@ -1257,9 +1721,9 @@ export function ModernApp() {
             <div className="col-span-12 lg:col-span-2 space-y-4">
               {/* Nomination Strategy */}
               <div className="bg-dark-bg-secondary rounded-xl p-4 border border-dark-border">
-                <h3 className="text-base font-semibold text-dark-text mb-3 flex items-center gap-2 cursor-help"
+                <h3 className="text-sm font-semibold text-dark-text mb-3 flex items-center gap-2 cursor-help"
                     title="Nominate players based on: 1) Overpriced players (market value > CVS value) to drain opponent budgets, 2) Players you don't want that others value highly, 3) Position runs when you're already set at that position. Formula: (Market Value - CVS Value) * Position Scarcity * Team Need Factor">
-                  <Target className="w-5 h-5 text-red-500" />
+                  <Target className="w-4 h-4 text-red-500" />
                   Nomination Strategy
                 </h3>
                 {availablePlayers.length > 0 && (() => {
@@ -1270,18 +1734,18 @@ export function ModernApp() {
                     }
                     return (
                       <div className="space-y-2">
-                        <div className="p-3 bg-dark-bg rounded-lg border border-draft-primary">
-                          <p className="text-sm font-medium text-dark-text">
+                        <div className="p-2 bg-dark-bg rounded-lg">
+                          <p className="text-xs font-medium text-dark-text">
                             {nominationStrategy.recommendedNomination.player.name}
                           </p>
-                          <p className="text-xs text-dark-text-secondary mt-1">
+                          <p className="text-[10px] text-dark-text-secondary mt-1">
                             {nominationStrategy.recommendedNomination.reason}
                           </p>
-                          <p className="text-xs text-draft-primary mt-1">
+                          <p className="text-[10px] text-white mt-1">
                             Expected: ${nominationStrategy.recommendedNomination.expectedPrice}
                           </p>
                         </div>
-                        <p className="text-xs text-dark-text-secondary">
+                        <p className="text-[10px] text-dark-text-secondary">
                           Phase: <span className="font-bold">{nominationStrategy.phase}</span>
                         </p>
                       </div>
@@ -1292,17 +1756,19 @@ export function ModernApp() {
                 })()}
               </div>
               
-              {/* Market Conditions */}
+              {/* Market Analysis */}
               <div className="bg-dark-bg-secondary rounded-xl p-4 border border-dark-border">
-                <h3 className="text-base font-semibold text-dark-text mb-3 flex items-center gap-2 cursor-help"
-                    title="Inflation Rate: How much prices are above/below expected value. Positive % = players are going for more than expected (spending is aggressive). Negative % = players are going for less than expected (spending is conservative). Based on average price paid vs. $200/16 = $12.50 baseline.">
-                  <TrendingUp className="w-5 h-5 text-yellow-500" />
-                  Market Conditions
+                <h3 className="text-sm font-semibold text-dark-text mb-3 flex items-center gap-2 cursor-help"
+                    title="Market conditions and position scarcity analysis. Inflation Rate shows if players are being overpaid (+%) or underpaid (-%). Position markets show scarcity levels and average prices.">
+                  <TrendingUp className="w-4 h-4 text-yellow-500" />
+                  Market Analysis
                 </h3>
+                
+                {/* Overall Market Stats */}
                 {marketConditions && (
-                  <div className="space-y-2">
+                  <div className="space-y-1 mb-3 pb-3 border-b border-dark-border">
                     <div className="flex justify-between">
-                      <span className="text-xs text-dark-text-secondary cursor-help" title="Shows if players are being overpaid (+%) or underpaid (-%) compared to expected values. Positive = prices are inflated, Negative = good value opportunities">Inflation Rate</span>
+                      <span className="text-xs text-dark-text-secondary">Inflation</span>
                       <span className={`text-xs font-bold ${
                         marketConditions.inflationRate > 0.1 ? 'text-red-500' :
                         marketConditions.inflationRate < -0.1 ? 'text-green-500' :
@@ -1313,28 +1779,21 @@ export function ModernApp() {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-xs text-dark-text-secondary cursor-help" title="Average amount spent per player so far in the draft. Helps gauge if the market is running hot or cold">Avg Price</span>
+                      <span className="text-xs text-dark-text-secondary">Avg Price</span>
                       <span className="text-xs font-bold text-dark-text">
                         ${marketConditions.avgPricePerPlayer.toFixed(0)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-xs text-dark-text-secondary cursor-help" title="Total budget left across all teams. Lower amounts mean tighter competition for remaining players">Total Remaining</span>
+                      <span className="text-xs text-dark-text-secondary">Total Left</span>
                       <span className="text-xs font-bold text-dark-text">
                         ${marketConditions.totalRemaining}
                       </span>
                     </div>
                   </div>
                 )}
-              </div>
-              
-              {/* Position Markets */}
-              <div className="bg-dark-bg-secondary rounded-xl p-4 border border-dark-border">
-                <h3 className="text-base font-semibold text-dark-text mb-3 flex items-center gap-2 cursor-help"
-                    title="Shows position scarcity and market trends. $ = Average price paid for position. % = Price inflation (positive = overpaying, negative = underpaying compared to projected value). Colors indicate scarcity: Red = Critical, Orange = Scarce, Yellow = Normal, Green = Abundant">
-                  <Users className="w-5 h-5 text-draft-primary" />
-                  Position Markets
-                </h3>
+                
+                {/* Position Markets */}
                 <div className="space-y-2">
                   {positionMarkets && positionMarkets.length > 0 ? positionMarkets.map(market => {
                     const getScarcityColor = (level: string) => {
@@ -1382,9 +1841,9 @@ export function ModernApp() {
               
               {/* Team Budgets */}
               <div className="bg-dark-bg-secondary rounded-xl p-4 border border-dark-border">
-                <h3 className="text-base font-semibold text-dark-text mb-3 flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-green-500" />
-                  Team Budgets
+                <h3 className="text-sm font-semibold text-dark-text mb-3 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-500" />
+                  The Competition
                 </h3>
                 
                 {/* Team Budget List */}
@@ -1400,29 +1859,75 @@ export function ModernApp() {
                     return (
                       <div key={`${team.id}-${team.spentBudget}-${team.roster.length}`} className="p-3 rounded-lg border border-dark-border">
                         <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span 
-                              className="text-sm font-semibold text-dark-text cursor-help"
-                              title={team.roster.length > 0 
-                                ? `Roster (${team.roster.length}):\n${team.roster.map(p => 
-                                    `• ${p.name} (${p.position}) - $${(p as any).purchasePrice || p.auctionValue || 1}`
-                                  ).join('\n')}`
-                                : 'No players drafted yet'
-                              }
-                            >
-                              {team.name || `Team ${idx + 1}`}
-                            </span>
+                          <div className="flex items-center gap-2 flex-1">
+                            {editingTeamId === team.id ? (
+                              <div className="flex items-center gap-1 flex-1">
+                                <input
+                                  type="text"
+                                  value={tempTeamName}
+                                  onChange={(e) => setTempTeamName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      setCustomTeamNames(prev => ({ ...prev, [team.id]: tempTeamName }));
+                                      setEditingTeamId(null);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingTeamId(null);
+                                    }
+                                  }}
+                                  className="flex-1 max-w-[100px] px-1 py-0.5 bg-dark-bg text-dark-text text-xs rounded border border-dark-border focus:border-draft-primary focus:outline-none"
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => {
+                                    setCustomTeamNames(prev => ({ ...prev, [team.id]: tempTeamName }));
+                                    setEditingTeamId(null);
+                                  }}
+                                  className="text-green-400 hover:text-green-300"
+                                >
+                                  <Check className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => setEditingTeamId(null)}
+                                  className="text-red-400 hover:text-red-300"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <span 
+                                  className="text-xs font-semibold text-dark-text cursor-help"
+                                  title={team.roster.length > 0 
+                                    ? `Roster (${team.roster.length}):\n${team.roster.map(p => 
+                                        `• ${p.name} (${p.position}) - $${(p as any).purchasePrice || p.auctionValue || 1}`
+                                      ).join('\n')}`
+                                    : 'No players drafted yet'
+                                  }
+                                >
+                                  {getTeamDisplayName(team, idx)}
+                                </span>
+                                <button
+                                  onClick={() => {
+                                    setEditingTeamId(team.id);
+                                    setTempTeamName(getTeamDisplayName(team, idx));
+                                  }}
+                                  className="text-gray-400 hover:text-draft-primary"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </button>
+                              </>
+                            )}
                           </div>
-                          <span className="text-xs text-dark-text-secondary">
+                          <span className="text-[10px] text-dark-text-secondary">
                             {rosterSize}/{maxRoster}
                           </span>
                         </div>
                         
                         <div className="space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-dark-text-secondary">Budget</span>
+                          <div className="flex justify-between text-[10px]">
+                            <span className="text-dark-text-secondary">Budget Remaining</span>
                             <span className={`font-bold ${
-                              remaining > 150 ? 'text-green-400' :
+                              remaining > 140 ? 'text-green-400' :
                               remaining > 50 ? 'text-yellow-400' :
                               'text-red-400'
                             }`}>
@@ -1430,21 +1935,16 @@ export function ModernApp() {
                             </span>
                           </div>
                           
-                          <div className="flex justify-between text-xs">
-                            <span className="text-dark-text-secondary">Spent</span>
-                            <span className="text-dark-text">${spent}</span>
-                          </div>
-                          
                           
                           {/* Budget Bar */}
-                          <div className="w-full bg-dark-bg-tertiary rounded-full h-2 mt-2">
+                          <div className="w-full bg-dark-bg-tertiary rounded-full h-1.5 mt-2 overflow-hidden">
                             <div 
-                              className={`h-2 rounded-full transition-all ${
-                                remaining > 150 ? 'bg-green-500' :
-                                remaining > 50 ? 'bg-yellow-500' :
+                              className={`h-1.5 rounded-full transition-all ${
+                                remaining > 140 ? 'bg-green-500' :
+                                remaining > 50 ? 'bg-green-500' :
                                 'bg-red-500'
                               }`}
-                              style={{ width: `${(remaining / 200) * 100}%` }}
+                              style={{ width: `${Math.min(100, (remaining / 200) * 100)}%` }}
                             />
                           </div>
                         </div>
@@ -1452,9 +1952,9 @@ export function ModernApp() {
                         {/* Recent Picks */}
                         {team.roster.length > 0 && (
                           <div className="mt-2 pt-2 border-t border-dark-border">
-                            <div className="text-xs text-dark-text-secondary mb-1">Recent:</div>
+                            <div className="text-[10px] text-dark-text-secondary mb-1">Recent:</div>
                             {team.roster.slice(-2).reverse().map((player, i) => (
-                              <div key={i} className="text-xs text-dark-text">
+                              <div key={i} className="text-[10px] text-dark-text">
                                 • {player.name} ({player.position}) ${(player as any).purchasePrice || player.auctionValue || 1}
                               </div>
                             ))}
@@ -1525,53 +2025,36 @@ export function ModernApp() {
       </AnimatePresence>
 
 
-      {/* Draft Price Input Modal */}
+      {/* Draft Price Input Modal - Draggable */}
       <AnimatePresence>
         {draftPriceModal.show && draftPriceModal.player && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setDraftPriceModal({ player: null, show: false, price: 0, selectedTeamId: 'my-team' })}
+          <DraggableModal
+            onClose={() => setDraftPriceModal({ player: null, show: false, price: 0, selectedTeamId: 'my-team' })}
+            title="Draft Player"
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-dark-bg-secondary rounded-xl p-6 max-w-md w-full border border-dark-border max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="p-3">
               {/* Header with Player Name and Position */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-2xl font-bold text-dark-text">
-                    {draftPriceModal.player.name}
-                  </h2>
-                  <span className={`px-1.5 py-0.5 rounded text-sm font-bold bg-position-${draftPriceModal.player.position.toLowerCase()} text-white`}>
-                    {draftPriceModal.player.position}
-                  </span>
-                  <span className="text-dark-text-secondary">
-                    {draftPriceModal.player.team}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setDraftPriceModal({ player: null, show: false, price: 0, selectedTeamId: 'my-team' })}
-                  className="text-dark-text-secondary hover:text-dark-text"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+              <div className="flex items-center gap-2 mb-3">
+                <h2 className="text-lg font-bold text-dark-text">
+                  {draftPriceModal.player.name}
+                </h2>
+                <span className={`px-0.5 py-0 rounded text-[9px] font-bold bg-position-${draftPriceModal.player.position.toLowerCase()} text-white`}>
+                  {draftPriceModal.player.position}
+                </span>
+                <span className="text-xs text-dark-text-secondary">
+                  {draftPriceModal.player.team}
+                </span>
               </div>
 
               {/* Player Stats Grid */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 {/* Left Column - Key Metrics */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {/* CVS Score with Visual Bar */}
-                  <div className="bg-dark-bg rounded-lg p-3 border border-dark-border">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs text-dark-text-secondary">CVS Score</span>
-                      <span className={`text-lg font-bold ${
+                  <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[10px] text-dark-text-secondary">CVS Score</span>
+                      <span className={`text-sm font-bold ${
                         draftPriceModal.player.cvsScore >= 80 ? 'text-green-400' :
                         draftPriceModal.player.cvsScore >= 60 ? 'text-yellow-400' :
                         draftPriceModal.player.cvsScore >= 40 ? 'text-orange-400' :
@@ -1580,9 +2063,9 @@ export function ModernApp() {
                         {Math.round(draftPriceModal.player.cvsScore)}
                       </span>
                     </div>
-                    <div className="w-full bg-dark-bg-tertiary rounded-full h-2">
+                    <div className="w-full bg-dark-bg-tertiary rounded-full h-1.5">
                       <div 
-                        className={`h-2 rounded-full ${
+                        className={`h-1.5 rounded-full ${
                           draftPriceModal.player.cvsScore >= 80 ? 'bg-green-400' :
                           draftPriceModal.player.cvsScore >= 60 ? 'bg-yellow-400' :
                           draftPriceModal.player.cvsScore >= 40 ? 'bg-orange-400' :
@@ -1594,42 +2077,53 @@ export function ModernApp() {
                   </div>
 
                   {/* Projected Points */}
-                  <div className="bg-dark-bg rounded-lg p-3 border border-dark-border">
+                  <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-dark-text-secondary">Projected Points</span>
-                      <span className="text-lg font-bold text-dark-text">
+                      <span className="text-[10px] text-dark-text-secondary">Projected Points</span>
+                      <span className="text-sm font-bold text-dark-text">
                         {Math.round(draftPriceModal.player.projectedPoints)}
                       </span>
                     </div>
                   </div>
 
-                  {/* PPR Metrics if available */}
-                  {draftPriceModal.player.receptions && draftPriceModal.player.receptions > 0 && (
-                    <div className="bg-dark-bg rounded-lg p-3 border border-dark-border">
-                      <div className="text-xs text-dark-text-secondary mb-2">PPR Stats</div>
+                  {/* Simple PPR Stats */}
+                  {draftPriceModal.player.receptions > 0 && (
+                    <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
                       <div className="space-y-1">
                         <div className="flex justify-between">
-                          <span className="text-xs text-dark-text-secondary">Proj. Receptions</span>
-                          <span className="text-sm font-bold text-purple-400">
-                            {Math.round(draftPriceModal.player.receptions || 0)}
+                          <span className="text-[10px] text-dark-text-secondary">Receptions</span>
+                          <span className="text-xs font-bold text-purple-400">
+                            {Math.round(draftPriceModal.player.receptions)}
                           </span>
                         </div>
-                        {draftPriceModal.player.targets && (
-                          <div className="flex justify-between">
-                            <span className="text-xs text-dark-text-secondary">Proj. Targets</span>
-                            <span className="text-sm text-dark-text">
-                              {Math.round(draftPriceModal.player.targets)}
-                            </span>
+                        <div className="flex justify-between">
+                          <span className="text-[10px] text-dark-text-secondary">PPR Bonus</span>
+                          <span className="text-xs font-bold text-purple-400">
+                            +{Math.round(draftPriceModal.player.receptions)} pts
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Physical Stats */}
+                  {(draftPriceModal.player.height || draftPriceModal.player.weight) && (
+                    <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
+                      <div className="grid grid-cols-2 gap-2">
+                        {draftPriceModal.player.height && (
+                          <div>
+                            <div className="text-[10px] text-dark-text-secondary">Height</div>
+                            <div className="text-sm font-bold text-dark-text">
+                              {Math.floor(Number(draftPriceModal.player.height) / 12)}'{Number(draftPriceModal.player.height) % 12}"
+                            </div>
                           </div>
                         )}
-                        {draftPriceModal.player.catchRate !== undefined && (
-                          <div className="flex justify-between">
-                            <span className="text-xs text-dark-text-secondary">Catch Rate</span>
-                            <span className="text-sm text-dark-text">
-                              {draftPriceModal.player.catchRate < 1 ? 
-                                (draftPriceModal.player.catchRate * 100).toFixed(1) : 
-                                draftPriceModal.player.catchRate.toFixed(1)}%
-                            </span>
+                        {draftPriceModal.player.weight && (
+                          <div>
+                            <div className="text-[10px] text-dark-text-secondary">Weight</div>
+                            <div className="text-sm font-bold text-dark-text">
+                              {draftPriceModal.player.weight} lbs
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1638,42 +2132,42 @@ export function ModernApp() {
                 </div>
 
                 {/* Right Column - Additional Info */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {/* Auction Value */}
-                  <div className="bg-dark-bg rounded-lg p-3 border border-dark-border">
+                  <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-dark-text-secondary">Auction Value</span>
-                      <span className="text-lg font-bold text-green-400">
+                      <span className="text-[10px] text-dark-text-secondary">Auction Value</span>
+                      <span className="text-sm font-bold text-green-400">
                         ${draftPriceModal.player.auctionValue || 0}
                       </span>
                     </div>
                   </div>
 
                   {/* ADP and Round */}
-                  <div className="bg-dark-bg rounded-lg p-3 border border-dark-border">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs text-dark-text-secondary">ADP</span>
-                      <span className="text-lg font-bold text-blue-400">
+                  <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[10px] text-dark-text-secondary">ADP</span>
+                      <span className="text-sm font-bold text-blue-400">
                         {draftPriceModal.player.adp ? draftPriceModal.player.adp.toFixed(1) : 'N/A'}
                       </span>
                     </div>
-                    <div className="text-xs text-dark-text-secondary">
+                    <div className="text-[10px] text-dark-text-secondary">
                       Round: {getAdpRoundRange(draftPriceModal.player.adp)}
                     </div>
                   </div>
 
                   {/* Age and Experience */}
-                  <div className="bg-dark-bg rounded-lg p-3 border border-dark-border">
+                  <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <div className="text-xs text-dark-text-secondary">Age</div>
-                        <div className="text-lg font-bold text-dark-text">
+                        <div className="text-[10px] text-dark-text-secondary">Age</div>
+                        <div className="text-sm font-bold text-dark-text">
                           {draftPriceModal.player.age || 'N/A'}
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs text-dark-text-secondary">Experience</div>
-                        <div className="text-lg font-bold text-dark-text">
+                        <div className="text-[10px] text-dark-text-secondary">Experience</div>
+                        <div className="text-sm font-bold text-dark-text">
                           {draftPriceModal.player.experience || 0} yrs
                         </div>
                       </div>
@@ -1681,130 +2175,215 @@ export function ModernApp() {
                   </div>
 
                   {/* Bye Week */}
-                  <div className="bg-dark-bg rounded-lg p-3 border border-dark-border">
+                  <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-dark-text-secondary">Bye Week</span>
-                      <span className="text-lg font-bold text-orange-400">
+                      <span className="text-[10px] text-dark-text-secondary">Bye Week</span>
+                      <span className="text-sm font-bold text-white">
                         Week {draftPriceModal.player.byeWeek || draftPriceModal.player.bye || 'N/A'}
                       </span>
                     </div>
                   </div>
+
+                  {/* Depth Chart */}
+                  {(draftPriceModal.player.depthChartPosition || draftPriceModal.player.depthChartOrder) && (
+                    <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-dark-text-secondary">Depth Chart</span>
+                        <span className={`text-sm font-bold ${
+                          draftPriceModal.player.depthChartOrder === 1 ? 'text-green-400' :
+                          draftPriceModal.player.depthChartOrder === 2 ? 'text-yellow-400' :
+                          draftPriceModal.player.depthChartOrder === 3 ? 'text-orange-400' :
+                          'text-red-400'
+                        }`}>
+                          {draftPriceModal.player.depthChartPosition || draftPriceModal.player.position}
+                          {draftPriceModal.player.depthChartOrder ? ` (${
+                            draftPriceModal.player.depthChartOrder === 1 ? 'Starter' :
+                            draftPriceModal.player.depthChartOrder === 2 ? 'Backup' :
+                            `#${draftPriceModal.player.depthChartOrder}`
+                          })` : ''}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Badges */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                {/* Elite badge */}
-                {(() => {
-                  const adp = draftPriceModal.player.adp;
-                  const position = draftPriceModal.player.position;
-                  const isElite = (
-                    (position === 'QB' && adp <= 5) ||
-                    (position === 'RB' && adp <= 10) ||
-                    (position === 'WR' && adp <= 12) ||
-                    (position === 'TE' && adp <= 4) ||
-                    (adp <= 26.5)
-                  );
-                  return isElite && (
-                    <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs font-bold">
-                      ⭐ Elite
-                    </span>
-                  );
-                })()}
-                
+              <div className="flex flex-wrap gap-1 mb-3">
                 {/* PPR Stud badge */}
                 {(draftPriceModal.player.receptions || 0) >= 75 && (
-                  <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-bold">
+                  <span className="px-0.5 py-0 bg-purple-500/20 text-purple-400 rounded text-[9px] font-bold">
                     📈 PPR Stud
                   </span>
                 )}
                 
-                {/* Rookie badge */}
-                {(draftPriceModal.player as any).isRookie && (
-                  <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs font-bold">
-                    🌟 Rookie
-                  </span>
-                )}
-                
-                {/* Young Talent badge */}
-                {draftPriceModal.player.age <= 24 && draftPriceModal.player.experience > 0 && draftPriceModal.player.projectedPoints >= 80 && (
-                  <span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded text-xs font-bold">
-                    ⚡ Young Talent
-                  </span>
-                )}
-                
-                {/* Veteran badge */}
-                {draftPriceModal.player.age >= 31 && (
-                  <span className="px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-xs font-bold">
-                    🎖️ Veteran
+                {/* Trending Badge */}
+                {draftPriceModal.player.trending && draftPriceModal.player.trending > 1000 && (
+                  <span 
+                    className={`px-0.5 py-0 rounded text-[9px] font-bold cursor-help ${
+                      draftPriceModal.player.trending > 5000 ? 'bg-red-600/20 text-red-400' :
+                      draftPriceModal.player.trending > 2500 ? 'bg-orange-600/20 text-orange-400' :
+                      'bg-yellow-600/20 text-yellow-400'
+                    }`}
+                    title={`Trending: ${draftPriceModal.player.trending.toLocaleString()} adds/drops recently`}
+                  >
+                    {draftPriceModal.player.trending > 5000 ? '🔥 Hot' : 
+                     draftPriceModal.player.trending > 2500 ? '📈 Trending' : '⬆️ Rising'}
                   </span>
                 )}
                 
                 {/* Consistent Producer badge */}
                 {badgeDataService.isConsistentProducer(draftPriceModal.player.name) && (
-                  <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs font-bold">
+                  <span className="px-0.5 py-0 bg-blue-500/20 text-blue-400 rounded text-[9px] font-bold">
                     📊 Consistent Producer
                   </span>
                 )}
                 
                 {/* RZ Monster badge */}
                 {badgeDataService.isRedZoneMonster(draftPriceModal.player.name) && (
-                  <span className="px-2 py-1 bg-red-600/20 text-red-400 rounded text-xs font-bold">
+                  <span className="px-0.5 py-0 bg-red-600/20 text-red-400 rounded text-[9px] font-bold">
                     🎯 RZ Monster
                   </span>
                 )}
                 
                 {/* Volume King badge */}
                 {badgeDataService.isVolumeKing(draftPriceModal.player.name) && (
-                  <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-bold">
+                  <span className="px-0.5 py-0 bg-purple-500/20 text-purple-400 rounded text-[9px] font-bold">
                     👑 Volume King
                   </span>
                 )}
 
                 {/* Value badge */}
                 {draftPriceModal.player.cvsScore > 60 && (draftPriceModal.player.auctionValue || 0) < 20 && (
-                  <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs font-bold">
+                  <span className="px-0.5 py-0 bg-green-500/20 text-green-400 rounded text-[9px] font-bold">
                     💎 Value Pick
                   </span>
                 )}
 
                 {/* Sleeper badge */}
                 {draftPriceModal.player.adp >= 100 && draftPriceModal.player.adp <= 200 && draftPriceModal.player.projectedPoints >= 120 && (
-                  <span className="px-2 py-1 bg-indigo-500/20 text-indigo-400 rounded text-xs font-bold">
+                  <span className="px-0.5 py-0 bg-indigo-500/20 text-indigo-400 rounded text-[9px] font-bold">
                     😴 Sleeper
                   </span>
                 )}
               </div>
 
+              {/* Advanced Stats Section */}
+              {(draftPriceModal.player.position === 'RB' || draftPriceModal.player.position === 'WR' || draftPriceModal.player.position === 'TE') && (
+                <div className="mb-3">
+                  <h3 className="text-xs font-semibold text-dark-text mb-2">PPR Performance</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* Opportunity Score */}
+                    <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
+                      <div className="text-[10px] text-dark-text-secondary mb-1">Opportunity Score</div>
+                      <div className="text-sm font-bold text-cyan-400">
+                        {(() => {
+                          const touches = (draftPriceModal.player.rushAttempts || 0) + (draftPriceModal.player.receptions || 0);
+                          const totalYards = (draftPriceModal.player.rushYards || 0) + (draftPriceModal.player.receivingYards || 0);
+                          const opportunityScore = touches > 0 ? Math.round((touches * 2 + totalYards * 0.1) / 3) : 0;
+                          return opportunityScore;
+                        })()}
+                      </div>
+                      <div className="text-[9px] text-dark-text-secondary">
+                        {(draftPriceModal.player.rushAttempts || 0) + (draftPriceModal.player.receptions || 0)} touches
+                      </div>
+                    </div>
+
+                    {/* Target Share */}
+                    {draftPriceModal.player.targets > 0 && (
+                      <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
+                        <div className="text-[10px] text-dark-text-secondary mb-1">Target Share</div>
+                        <div className="text-sm font-bold text-purple-400">
+                          {Math.round((draftPriceModal.player.targets / 550) * 100)}%
+                        </div>
+                        <div className="text-[9px] text-dark-text-secondary">
+                          {draftPriceModal.player.targets} targets
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Catch Rate */}
+                    {draftPriceModal.player.targets > 0 && (
+                      <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
+                        <div className="text-[10px] text-dark-text-secondary mb-1">Catch Rate</div>
+                        <div className="text-sm font-bold text-green-400">
+                          {Math.round((draftPriceModal.player.receptions / draftPriceModal.player.targets) * 100)}%
+                        </div>
+                        <div className="text-[9px] text-dark-text-secondary">
+                          {draftPriceModal.player.receptions}/{draftPriceModal.player.targets}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TD Rate */}
+                    <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
+                      <div className="text-[10px] text-dark-text-secondary mb-1">TD Rate</div>
+                      <div className="text-sm font-bold text-red-400">
+                        {(() => {
+                          const totalTDs = (draftPriceModal.player.rushTDs || 0) + (draftPriceModal.player.receivingTDs || 0);
+                          const touches = (draftPriceModal.player.rushAttempts || 0) + (draftPriceModal.player.receptions || 0);
+                          return touches > 0 ? Math.round((totalTDs / touches) * 100) : 0;
+                        })()}%
+                      </div>
+                      <div className="text-[9px] text-dark-text-secondary">
+                        {(draftPriceModal.player.rushTDs || 0) + (draftPriceModal.player.receivingTDs || 0)} TDs
+                      </div>
+                    </div>
+
+                    {/* YPC/YPR */}
+                    {draftPriceModal.player.position === 'RB' && draftPriceModal.player.rushAttempts > 0 && (
+                      <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
+                        <div className="text-[10px] text-dark-text-secondary mb-1">Yards/Carry</div>
+                        <div className="text-sm font-bold text-blue-400">
+                          {Math.round(draftPriceModal.player.rushYards / draftPriceModal.player.rushAttempts)}
+                        </div>
+                        <div className="text-[9px] text-dark-text-secondary">
+                          {draftPriceModal.player.rushYards} yards
+                        </div>
+                      </div>
+                    )}
+
+                    {(draftPriceModal.player.position === 'WR' || draftPriceModal.player.position === 'TE') && draftPriceModal.player.receptions > 0 && (
+                      <div className="bg-dark-bg rounded-lg p-2 border border-dark-border">
+                        <div className="text-[10px] text-dark-text-secondary mb-1">Yards/Rec</div>
+                        <div className="text-sm font-bold text-blue-400">
+                          {Math.round(draftPriceModal.player.receivingYards / draftPriceModal.player.receptions)}
+                        </div>
+                        <div className="text-[9px] text-dark-text-secondary">
+                          {draftPriceModal.player.receivingYards} yards
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Price Input Section */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Team Selection Dropdown */}
-                <div className="bg-dark-bg rounded-lg p-3 border border-draft-primary/30">
-                  <label className="block text-sm font-semibold text-draft-primary mb-2">
-                    Which team drafted this player?
-                  </label>
+                <div className="bg-dark-bg rounded-lg p-2 border border-draft-primary/30">
                   <select
                     value={draftPriceModal.selectedTeamId}
                     onChange={(e) => setDraftPriceModal(prev => ({ 
                       ...prev, 
                       selectedTeamId: e.target.value
                     }))}
-                    className="w-full bg-dark-bg-tertiary text-dark-text px-3 py-2 rounded border border-dark-border focus:border-draft-primary focus:outline-none cursor-pointer"
+                    className="w-full bg-dark-bg-tertiary text-dark-text text-xs px-2 py-1 rounded border border-dark-border focus:border-draft-primary focus:outline-none cursor-pointer"
                   >
-                    {teams.map(team => (
-                      <option key={team.id} value={team.id} className="bg-dark-bg-tertiary text-dark-text">
-                        {team.name} (${team.budget - team.spentBudget} remaining)
+                    {teams.map((team, idx) => (
+                      <option key={team.id} value={team.id} className="bg-dark-bg-tertiary text-dark-text text-xs">
+                        {getTeamDisplayName(team, idx)} (${team.budget - team.spentBudget} remaining)
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm text-dark-text-secondary mb-2">
+                  <label className="block text-xs text-dark-text-secondary mb-1">
                     Enter Draft Price (Market Value: ${draftPriceModal.player.auctionValue || 0})
                   </label>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl text-dark-text">$</span>
+                    <span className="text-sm text-dark-text">$</span>
                     <input
                       type="number"
                       min="0"
@@ -1814,7 +2393,7 @@ export function ModernApp() {
                         ...prev, 
                         price: Math.max(0, Math.min(200, parseInt(e.target.value) || 0))
                       }))}
-                      className="flex-1 bg-dark-bg text-dark-text px-3 py-2 rounded border border-dark-border focus:border-draft-primary focus:outline-none text-2xl font-bold"
+                      className="flex-1 bg-dark-bg text-dark-text px-2 py-0.5 rounded border border-dark-border focus:border-draft-primary focus:outline-none text-sm font-bold"
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
@@ -1832,7 +2411,7 @@ export function ModernApp() {
                         ...prev, 
                         price: Math.max(0, prev.price - 1)
                       }))}
-                      className="px-3 py-1 bg-dark-bg hover:bg-dark-bg-tertiary text-dark-text rounded border border-dark-border transition-colors"
+                      className="px-1.5 py-0.5 bg-dark-bg hover:bg-dark-bg-tertiary text-dark-text text-[10px] rounded border border-dark-border transition-colors"
                     >
                       -$1
                     </button>
@@ -1841,7 +2420,7 @@ export function ModernApp() {
                         ...prev, 
                         price: Math.min(200, prev.price + 1)
                       }))}
-                      className="px-3 py-1 bg-dark-bg hover:bg-dark-bg-tertiary text-dark-text rounded border border-dark-border transition-colors"
+                      className="px-1.5 py-0.5 bg-dark-bg hover:bg-dark-bg-tertiary text-dark-text text-[10px] rounded border border-dark-border transition-colors"
                     >
                       +$1
                     </button>
@@ -1850,7 +2429,7 @@ export function ModernApp() {
                         ...prev, 
                         price: Math.max(0, prev.price - 5)
                       }))}
-                      className="px-3 py-1 bg-dark-bg hover:bg-dark-bg-tertiary text-dark-text rounded border border-dark-border transition-colors"
+                      className="px-1.5 py-0.5 bg-dark-bg hover:bg-dark-bg-tertiary text-dark-text text-[10px] rounded border border-dark-border transition-colors"
                     >
                       -$5
                     </button>
@@ -1859,7 +2438,7 @@ export function ModernApp() {
                         ...prev, 
                         price: Math.min(200, prev.price + 5)
                       }))}
-                      className="px-3 py-1 bg-dark-bg hover:bg-dark-bg-tertiary text-dark-text rounded border border-dark-border transition-colors"
+                      className="px-1.5 py-0.5 bg-dark-bg hover:bg-dark-bg-tertiary text-dark-text text-[10px] rounded border border-dark-border transition-colors"
                     >
                       +$5
                     </button>
@@ -1870,43 +2449,38 @@ export function ModernApp() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setDraftPriceModal({ player: null, show: false, price: 0, selectedTeamId: 'my-team' })}
-                  className="flex-1 bg-dark-bg-tertiary hover:bg-gray-700 text-dark-text text-sm font-medium py-1 px-3 rounded-lg transition-colors"
+                  className="flex-1 bg-dark-bg-tertiary hover:bg-gray-700 text-dark-text text-[10px] font-medium py-0.5 px-1.5 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDraft}
-                  className="flex-1 bg-draft-primary hover:bg-green-600 text-white text-sm font-medium py-1 px-3 rounded-lg transition-colors"
+                  className="flex-1 bg-draft-primary hover:bg-green-600 text-white text-[10px] font-medium py-0.5 px-1.5 rounded-lg transition-colors"
                 >
                   Draft for ${draftPriceModal.price}
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </DraggableModal>
         )}
       </AnimatePresence>
 
-      {/* Data Quality Modal */}
+      {/* Data Quality Modal - Draggable */}
       {showDataQuality && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-             onClick={() => setShowDataQuality(false)}>
-          <div className="bg-dark-bg-secondary rounded-xl p-6 max-w-xl w-full max-h-[80vh] overflow-y-auto border border-dark-border"
-               onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-dark-text">Data Quality Report</h2>
-              <button onClick={() => setShowDataQuality(false)} className="text-dark-text-secondary hover:text-dark-text">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        <DraggableModal
+          onClose={() => setShowDataQuality(false)}
+          title="Data Quality Report"
+        >
+          <div className="p-3">
             
             {/* Data Source Info */}
-            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
-              <h3 className="text-blue-400 font-semibold mb-2">📊 Data Sources</h3>
-              <div className="text-sm text-dark-text-secondary space-y-1">
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-2 mb-2">
+              <h3 className="text-xs text-blue-400 font-semibold mb-1">📊 Data Sources</h3>
+              <div className="text-[10px] text-dark-text-secondary space-y-0.5">
                 <div className="mb-2">
                   <strong>Canonical CSV Projections:</strong> {extendedPlayers.length} players loaded
                 </div>
-                <div className="ml-4 text-xs space-y-0.5">
+                <div className="ml-2 text-[9px] space-y-0.5">
                   <div>• QB: qb_projections_2025.csv</div>
                   <div>• RB: rb_projections_2025.csv</div>
                   <div>• WR: wr_projections_2025.csv</div>
@@ -1918,25 +2492,25 @@ export function ModernApp() {
                 
                 <div className="mt-3 pt-3 border-t border-blue-500/20">
                   <strong>Real-time Updates:</strong> Sleeper API
-                  <div className="ml-4 text-xs">Last updated: {improvedCanonicalService.getSleeperLastUpdated()?.toLocaleString() || 'Not yet fetched'}</div>
+                  <div className="ml-2 text-[9px]">Last updated: {improvedCanonicalService.getSleeperLastUpdated()?.toLocaleString() || 'Not yet fetched'}</div>
                 </div>
                 
                 <div className="mt-3 pt-3 border-t border-blue-500/20">
                   <strong>Validation Tests Run at Startup:</strong>
                 </div>
-                <div className="ml-2">
+                <div className="ml-2 text-[9px]">
                   ✓ Statistical impossibility checks (catch rate, negative points, etc.)
                 </div>
-                <div className="ml-2">
+                <div className="ml-2 text-[9px]">
                   ✓ Hallucination detection (AI-generated patterns)
                 </div>
-                <div className="ml-2">
+                <div className="ml-2 text-[9px]">
                   ✓ Data provenance verification (canonical sources only)
                 </div>
-                <div className="ml-2">
+                <div className="ml-2 text-[9px]">
                   ✓ Name normalization for API matching
                 </div>
-                <div className="ml-2">
+                <div className="ml-2 text-[9px]">
                   ✓ Age/experience validation
                 </div>
               </div>
@@ -2004,21 +2578,21 @@ export function ModernApp() {
                       setValidationResults('Error running validation tests');
                     }
                   }}
-                  className="px-4 py-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg text-sm font-medium"
+                  className="px-2 py-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg text-[9px] font-medium"
                 >
                   🧪 Run Validation Tests
                 </button>
                 {validationResults && (
-                  <div className="flex-1 px-3 py-2 bg-dark-bg rounded-lg border border-dark-border text-xs text-dark-text-secondary">
+                  <div className="flex-1 px-2 py-1 bg-dark-bg rounded-lg border border-dark-border text-[9px] text-dark-text-secondary">
                     {validationResults}
                   </div>
                 )}
               </div>
               
               {!dataQualityIssues.legitimacy && (
-                <div className="bg-red-600/30 border border-red-400/50 rounded-lg p-4">
-                  <h3 className="text-red-300 font-semibold mb-2">🚫 Data Provenance Issues</h3>
-                  <div className="space-y-1 text-sm text-dark-text-secondary">
+                <div className="bg-red-600/30 border border-red-400/50 rounded-lg p-2">
+                  <h3 className="text-[10px] text-red-300 font-semibold mb-1">🚫 Data Provenance Issues</h3>
+                  <div className="space-y-0.5 text-[9px] text-dark-text-secondary">
                     {dataProvenanceChecker.getCriticalIssues()
                       .slice(0, 5)
                       .map((issue, idx) => (
@@ -2027,16 +2601,16 @@ export function ModernApp() {
                         </div>
                       ))}
                   </div>
-                  <div className="mt-2 text-xs text-red-400">
+                  <div className="mt-1 text-[9px] text-red-400">
                     Data may not be from canonical sources or evaluation engines
                   </div>
                 </div>
               )}
               
               {dataQualityIssues.hallucinations > 0 && (
-                <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
-                  <h3 className="text-purple-400 font-semibold mb-2">🧠 Likely Hallucinations ({dataQualityIssues.hallucinations})</h3>
-                  <div className="space-y-1 text-sm text-dark-text-secondary">
+                <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-2">
+                  <h3 className="text-[10px] text-purple-400 font-semibold mb-1">🧠 Likely Hallucinations ({dataQualityIssues.hallucinations})</h3>
+                  <div className="space-y-0.5 text-[9px] text-dark-text-secondary">
                     {hallucinationDetector.getHighConfidenceIssues()
                       .slice(0, 10)
                       .map((issue, idx) => (
@@ -2049,9 +2623,9 @@ export function ModernApp() {
               )}
               
               {dataQualityIssues.errors > 0 && (
-                <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
-                  <h3 className="text-red-400 font-semibold mb-2">❌ Errors ({dataQualityIssues.errors})</h3>
-                  <div className="space-y-1 text-sm text-dark-text-secondary">
+                <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-2">
+                  <h3 className="text-[10px] text-red-400 font-semibold mb-1">❌ Errors ({dataQualityIssues.errors})</h3>
+                  <div className="space-y-0.5 text-[9px] text-dark-text-secondary">
                     {dataValidator.getIssues()
                       .filter(i => i.severity === 'error')
                       .slice(0, 10)
@@ -2063,9 +2637,9 @@ export function ModernApp() {
               )}
               
               {dataQualityIssues.warnings > 0 && (
-                <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
-                  <h3 className="text-yellow-400 font-semibold mb-2">⚠️ Warnings ({dataQualityIssues.warnings})</h3>
-                  <div className="space-y-1 text-sm text-dark-text-secondary">
+                <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-2">
+                  <h3 className="text-[10px] text-yellow-400 font-semibold mb-1">⚠️ Warnings ({dataQualityIssues.warnings})</h3>
+                  <div className="space-y-0.5 text-[9px] text-dark-text-secondary">
                     {dataValidator.getIssues()
                       .filter(i => i.severity === 'warning')
                       .slice(0, 10)
@@ -2077,9 +2651,9 @@ export function ModernApp() {
               )}
               
               {dataQualityIssues.errors === 0 && dataQualityIssues.warnings === 0 && dataQualityIssues.hallucinations === 0 && dataQualityIssues.legitimacy && (
-                <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-                  <h3 className="text-green-400 font-semibold mb-2">✅ All Data Valid</h3>
-                  <div className="text-sm text-dark-text-secondary space-y-1">
+                <div className="bg-green-900/20 rounded-lg p-2">
+                  <h3 className="text-[10px] text-green-400 font-semibold mb-1">✅ All Data Valid</h3>
+                  <div className="text-[9px] text-dark-text-secondary space-y-0.5">
                     <div>• No statistical impossibilities detected</div>
                     <div>• No hallucination patterns found</div>
                     <div>• All data from canonical sources verified</div>
@@ -2088,72 +2662,56 @@ export function ModernApp() {
                 </div>
               )}
               
-              <div className="text-xs text-dark-text-tertiary mt-4">
+              <div className="text-[9px] text-dark-text-tertiary mt-2">
                 <p>Data is refreshed daily from Sleeper API</p>
                 <p>Some validation warnings are expected (e.g., high ADP for kickers)</p>
               </div>
             </div>
           </div>
-        </div>
+        </DraggableModal>
       )}
 
-      {/* Player Comparison Modal */}
+      {/* Player Comparison Modal - Draggable */}
       {showComparisonModal && (
-        <DarkPlayerComparison
-          players={extendedPlayers.filter(p => selectedForComparison.has(p.id))}
+        <DraggableModal
           onClose={() => {
             setShowComparisonModal(false);
             setSelectedForComparison(new Set());
           }}
-          onRemovePlayer={(playerId) => {
-            const newSelection = new Set(selectedForComparison);
-            newSelection.delete(playerId);
-            setSelectedForComparison(newSelection);
-            if (newSelection.size < 2) {
+          title="Player Comparison"
+        >
+          <DarkPlayerComparison
+            players={extendedPlayers.filter(p => selectedForComparison.has(p.id))}
+            onClose={() => {
               setShowComparisonModal(false);
-            }
-          }}
-        />
+              setSelectedForComparison(new Set());
+            }}
+            onRemovePlayer={(playerId) => {
+              const newSelection = new Set(selectedForComparison);
+              newSelection.delete(playerId);
+              setSelectedForComparison(newSelection);
+              if (newSelection.size < 2) {
+                setShowComparisonModal(false);
+              }
+            }}
+            isEmbedded={true}
+          />
+        </DraggableModal>
       )}
 
-      {/* Team Command Center Modal */}
+      {/* Team Command Center Modal - Draggable */}
       <AnimatePresence>
         {showTeamCommandCenter && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowTeamCommandCenter(false)}
+          <DraggableModal
+            onClose={() => setShowTeamCommandCenter(false)}
+            title="My Team"
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-dark-bg-secondary rounded-xl w-full max-w-6xl max-h-[90vh] overflow-hidden border border-dark-border"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between p-4 border-b border-dark-border">
-                <h2 className="text-xl font-bold text-dark-text flex items-center gap-2">
-                  <Users className="w-6 h-6 text-draft-primary" />
-                  Team Command Center
-                </h2>
-                <button
-                  onClick={() => setShowTeamCommandCenter(false)}
-                  className="p-2 rounded-lg hover:bg-dark-bg transition-colors"
-                >
-                  <X className="w-5 h-5 text-dark-text-secondary" />
-                </button>
-              </div>
-              <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
-                <TeamCommandCenter teamId="my-team" totalBudget={200} />
-              </div>
-            </motion.div>
-          </motion.div>
+            <TeamCommandCenter teamId="my-team" totalBudget={200} />
+          </DraggableModal>
         )}
       </AnimatePresence>
     </div>
   );
 }
 
-export default ModernApp;
+export default App;

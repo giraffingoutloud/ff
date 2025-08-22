@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { TrendingUp, DollarSign, Target, AlertTriangle } from 'lucide-react';
-import { useEvaluation } from '../hooks/useEvaluation';
 import { Player } from '../types';
+import { improvedCanonicalService } from '../services/improvedCanonicalService';
+import { dynamicCVSCalculator } from '../services/dynamicCVSCalculator';
+import { useDraftStore } from '../store/draftStore';
 
 interface ValueMetrics {
   player: Player;
@@ -14,16 +16,57 @@ interface ValueMetrics {
 }
 
 export const ValueFinder: React.FC = () => {
-  const { evaluations } = useEvaluation();
+  const { draftHistory } = useDraftStore();
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [minCvsInput, setMinCvsInput] = useState('50');
   const [maxPriceInput, setMaxPriceInput] = useState('30');
   
   const minCvs = minCvsInput === '' ? 0 : Number(minCvsInput);
   const maxPrice = maxPriceInput === '' ? 200 : Number(maxPriceInput);
   
+  // Load all players once
+  useEffect(() => {
+    const loadPlayers = async () => {
+      try {
+        setIsLoading(true);
+        const players = await improvedCanonicalService.initialize();
+        // Calculate CVS for all players if needed
+        const playersWithCVS = players.map(player => {
+          if (!player.cvsScore || isNaN(player.cvsScore)) {
+            return dynamicCVSCalculator.calculatePlayerCVS(player);
+          }
+          return player;
+        });
+        console.log(`ValueFinder loaded ${playersWithCVS.length} players`);
+        // Log a few sample players to verify data
+        if (playersWithCVS.length > 0) {
+          console.log('Sample players:', playersWithCVS.slice(0, 3).map(p => ({
+            name: p.name,
+            cvs: p.cvsScore,
+            auctionValue: p.auctionValue,
+            projectedPoints: p.projectedPoints
+          })));
+        }
+        setAllPlayers(playersWithCVS);
+      } catch (error) {
+        console.error('ValueFinder failed to load players:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadPlayers();
+  }, []);
+  
+  // Filter out drafted players
+  const availablePlayers = useMemo(() => {
+    const draftedIds = new Set(draftHistory.map(dp => dp.id));
+    return allPlayers.filter(p => !draftedIds.has(p.id));
+  }, [allPlayers, draftHistory]);
+  
   const valueFinds = useMemo(() => {
-    // Calculate value metrics for all players
-    const metrics: ValueMetrics[] = evaluations
+    // Calculate value metrics for available players only
+    const metrics: ValueMetrics[] = availablePlayers
       .filter(p => p.auctionValue && p.auctionValue >= 2 && p.cvsScore > 0) // Filter out $1 players
       .map(p => {
         const auctionValue = p.auctionValue!; // We know it exists from filter
@@ -63,12 +106,16 @@ export const ValueFinder: React.FC = () => {
     return filtered
       .sort((a, b) => b.valueRatio - a.valueRatio)
       .slice(0, 20);
-  }, [evaluations, minCvs, maxPrice]);
+  }, [availablePlayers, minCvs, maxPrice]);
   
   // Find different types of arbitrage
   const arbitrageOpportunities = useMemo(() => {
-    const allMetrics: ValueMetrics[] = evaluations
-      .filter(p => p.auctionValue && p.auctionValue >= 2 && p.auctionValue <= maxPrice && p.cvsScore > 0) // Filter out $1 players and respect max price
+    console.log(`ValueFinder: Available players: ${availablePlayers.length}, MinCVS: ${minCvs}, MaxPrice: ${maxPrice}`);
+    
+    const playersWithValidData = availablePlayers.filter(p => p.auctionValue && p.auctionValue >= 2 && p.cvsScore > 0);
+    console.log(`Players with valid data: ${playersWithValidData.length}`);
+    
+    const allMetrics: ValueMetrics[] = playersWithValidData
       .map(p => {
         const auctionValue = p.auctionValue!; // We know it exists from filter
         return {
@@ -82,12 +129,22 @@ export const ValueFinder: React.FC = () => {
         };
       });
     
+    const undervalued = allMetrics
+      .filter(m => m.cvsScore >= minCvs && m.auctionValue <= maxPrice)
+      .sort((a, b) => b.cvsScore - a.cvsScore);
+    
+    console.log(`Undervalued players found: ${undervalued.length}`);
+    if (undervalued.length > 0) {
+      console.log('First undervalued player:', {
+        name: undervalued[0].player.name,
+        cvs: undervalued[0].cvsScore,
+        price: undervalued[0].auctionValue
+      });
+    }
+    
     return {
       // High CVS but low price (respecting max price and min CVS filters)
-      undervaluedElite: allMetrics
-        .filter(m => m.cvsScore >= Math.max(70, minCvs) && m.auctionValue <= maxPrice)
-        .sort((a, b) => b.cvsScore - a.cvsScore) // Sort by CVS descending
-        .slice(0, 20), // Show up to 20 players
+      undervaluedElite: undervalued.slice(0, 20), // Show up to 20 players
       
       // Best bang for buck under $20 (or max price if lower)
       budgetGems: allMetrics
@@ -107,7 +164,7 @@ export const ValueFinder: React.FC = () => {
         .sort((a, b) => b.marketInefficiency - a.marketInefficiency)
         .slice(0, 5)
     };
-  }, [evaluations, maxPrice, minCvs]);
+  }, [availablePlayers, maxPrice, minCvs]);
 
   return (
     <div className="bg-dark-bg-secondary rounded-lg p-4 border border-dark-border">
@@ -142,10 +199,21 @@ export const ValueFinder: React.FC = () => {
         </div>
       </div>
       
+      {/* Loading State */}
+      {isLoading && (
+        <div className="text-xs text-gray-400 text-center py-4">Loading players...</div>
+      )}
+      
       {/* Filtered Players List */}
-      <div className="space-y-1 max-h-[600px] overflow-y-auto">
-        {arbitrageOpportunities.undervaluedElite.map(m => (
-          <div key={m.player.id} className="text-xs flex justify-between hover:bg-dark-bg/50 py-1">
+      {!isLoading && (
+        <div className="space-y-1 max-h-[600px] overflow-y-auto">
+          {arbitrageOpportunities.undervaluedElite.length === 0 ? (
+            <div className="text-xs text-gray-400 text-center py-4">
+              No players found matching criteria (CVS ≥ {minCvs}, Price ≤ ${maxPrice})
+            </div>
+          ) : (
+            arbitrageOpportunities.undervaluedElite.map(m => (
+              <div key={m.player.id} className="text-xs flex justify-between hover:bg-dark-bg/50 py-1">
             <span className="text-gray-300">
               {m.player.name}
               <span className="text-gray-500 ml-1">({m.player.position})</span>
@@ -184,9 +252,11 @@ export const ValueFinder: React.FC = () => {
               )}
               <span className="text-gray-400">)</span>
             </span>
-          </div>
-        ))}
-      </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 };
