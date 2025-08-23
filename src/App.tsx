@@ -182,7 +182,7 @@ export function App() {
   const appInitialized = useRef(false);
   const [marketConditions, setMarketConditions] = useState<MarketConditions | null>(null);
   const [positionMarkets, setPositionMarkets] = useState<PositionMarket[]>([]);
-  const [sortColumn, setSortColumn] = useState<'name' | 'position' | 'team' | 'cvsScore' | 'projectedPoints' | 'receptions' | 'auctionValue' | 'adp' | 'round' | 'age' | 'byeWeek' | 'experience' | 'sos' | 'intrinsicValue' | 'marketPrice' | 'edge'>('cvsScore');
+  const [sortColumn, setSortColumn] = useState<'name' | 'position' | 'team' | 'cvsScore' | 'projectedPoints' | 'receptions' | 'auctionValue' | 'adp' | 'byeWeek' | 'sos' | 'intrinsicValue' | 'marketPrice' | 'edge'>('cvsScore');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [displayCount, setDisplayCount] = useState(75);
   const [selectedForComparison, setSelectedForComparison] = useState<Set<string>>(new Set());
@@ -821,8 +821,8 @@ export function App() {
               {/* Methodology Button */}
               <button
                 onClick={() => {
-                  // Open methodology in new window
-                  window.open('/ff/methodology', 'methodology', 'width=1200,height=800');
+                  // Open methodology in new window using hash routing
+                  window.open('/ff/#/methodology', 'methodology', 'width=1200,height=800');
                 }}
                 className="p-2 rounded-lg bg-dark-bg hover:bg-dark-bg-secondary transition-colors text-dark-text-secondary hover:text-dark-text"
                 title="Methodology & Calculations"
@@ -859,8 +859,8 @@ export function App() {
                     localStorage.setItem('ff_teams', JSON.stringify(teams));
                     localStorage.setItem('ff_draftHistory', JSON.stringify(draftHistory));
                     localStorage.setItem('ff_userTeamId', myTeam.id);
-                    // Open auction command center in new window
-                    window.open('/ff/auction-command', 'auctionCommand', 'width=1400,height=900');
+                    // Open auction command center in new window using hash routing
+                    window.open('/ff/#/auction-command', 'auctionCommand', 'width=1400,height=900');
                   }}
                   className="p-2 bg-dark-bg rounded-lg text-dark-text-secondary hover:bg-draft-primary hover:text-white transition-colors"
                   title="Grid View - Auction Draft Command Center"
@@ -1368,7 +1368,7 @@ export function App() {
                         >
                           <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => handleSort('name')}>
-                              Player
+                              <span className="cursor-help" title="Player Name - Click column to sort, use search box to filter">Player</span>
                               {sortColumn === 'name' ? (
                                 sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                               ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
@@ -1401,7 +1401,7 @@ export function App() {
                           onClick={() => handleSort('position')}
                         >
                           <div className="flex items-center justify-center gap-1">
-                            Pos
+                            <span className="cursor-help" title="Position - QB/RB/WR/TE/K/DST">Pos</span>
                             {sortColumn === 'position' ? (
                               sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
@@ -1412,7 +1412,7 @@ export function App() {
                           onClick={() => handleSort('team')}
                         >
                           <div className="flex items-center justify-center gap-1">
-                            Team
+                            <span className="cursor-help" title="NFL Team - Player's current team">Team</span>
                             {sortColumn === 'team' ? (
                               sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
@@ -1425,7 +1425,7 @@ export function App() {
                               onClick={() => handleSort('intrinsicValue')}
                             >
                               <div className="flex items-center justify-center gap-1">
-                                <span className="cursor-help" title="Intrinsic Value - Pure value based on projections (VORP methodology)">Value</span>
+                                <span className="cursor-help" title="Intrinsic Value ($) - What the player is truly worth based on projected performance and VORP (Value Over Replacement Player) methodology">Value</span>
                                 {sortColumn === 'intrinsicValue' ? (
                                   sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                                 ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
@@ -1436,7 +1436,7 @@ export function App() {
                               onClick={() => handleSort('marketPrice')}
                             >
                               <div className="flex items-center justify-center gap-1">
-                                <span className="cursor-help" title="Expected Market Price (from AAV/ADP)">Price</span>
+                                <span className="cursor-help" title="Market Price ($) - What the market expects to pay based on Average Auction Value (AAV) and Average Draft Position (ADP) data">Price</span>
                                 {sortColumn === 'marketPrice' ? (
                                   sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                                 ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
@@ -1447,7 +1447,7 @@ export function App() {
                               onClick={() => handleSort('edge')}
                             >
                               <div className="flex items-center justify-center gap-1">
-                                <span className="cursor-help" title="Value - Price (positive = bargain)">Edge</span>
+                                <span className="cursor-help" title="Edge ($) - The difference between Intrinsic Value and Market Price. Positive = undervalued bargain, Negative = overpriced">Edge</span>
                                 {sortColumn === 'edge' ? (
                                   sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                                 ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
@@ -1460,7 +1460,7 @@ export function App() {
                             onClick={() => handleSort('cvsScore')}
                           >
                             <div className="flex items-center justify-center gap-1">
-                              <span className="cursor-help" title="Composite Value Score (0-100) - Weighted formula: Auction Value 23% + ADP 23% + Projected Points 28% + Position Scarcity 8% + Strength of Schedule 10% + Year-over-Year Trend 8%">CVS</span>
+                              <span className="cursor-help" title="Composite Value Score (0-100) - Overall player rating combining projections, market value, position scarcity, and schedule strength">CVS</span>
                               {sortColumn === 'cvsScore' ? (
                                 sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                               ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
@@ -1472,7 +1472,7 @@ export function App() {
                           onClick={() => handleSort('projectedPoints')}
                         >
                           <div className="flex items-center justify-center gap-1">
-                            <span className="cursor-help" title="Projected fantasy points for the season">Proj</span>
+                            <span className="cursor-help" title="Projected Points - Total fantasy points expected for the 2025 season based on statistical projections">Proj</span>
                             {sortColumn === 'projectedPoints' ? (
                               sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
@@ -1483,7 +1483,7 @@ export function App() {
                           onClick={() => handleSort('receptions')}
                         >
                           <div className="flex items-center justify-center gap-1">
-                            <span className="cursor-help" title="Points Per Reception bonus points">PPR</span>
+                            <span className="cursor-help" title="PPR Bonus - Additional points from projected receptions in Point Per Reception scoring format">PPR</span>
                             {sortColumn === 'receptions' ? (
                               sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
@@ -1494,7 +1494,7 @@ export function App() {
                           onClick={() => handleSort('auctionValue')}
                         >
                           <div className="flex items-center justify-center gap-1">
-                            <span className="cursor-help" title="Auction draft dollar value ($200 budget)">$Value</span>
+                            <span className="cursor-help" title="Auction Value ($) - Recommended spending amount in a $200 budget auction draft based on historical data">$AAV</span>
                             {sortColumn === 'auctionValue' ? (
                               sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
@@ -1505,41 +1505,8 @@ export function App() {
                           onClick={() => handleSort('adp')}
                         >
                           <div className="flex items-center justify-center gap-1">
-                            <span className="cursor-help" title="Average Draft Position across leagues">ADP</span>
+                            <span className="cursor-help" title="Average Draft Position - Where the player is typically selected across all ESPN leagues (lower = earlier)">ADP</span>
                             {sortColumn === 'adp' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                          </div>
-                        </th>
-                        <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-7"
-                          onClick={() => handleSort('round')}
-                        >
-                          <div className="flex items-center justify-center gap-1">
-                            <span className="cursor-help" title="Draft round based on 12-team league">Rd</span>
-                            {sortColumn === 'round' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                          </div>
-                        </th>
-                        <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8"
-                          onClick={() => handleSort('age')}
-                        >
-                          <div className="flex items-center justify-center gap-1">
-                            Age
-                            {sortColumn === 'age' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                          </div>
-                        </th>
-                        <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8"
-                          onClick={() => handleSort('experience')}
-                        >
-                          <div className="flex items-center justify-center gap-1">
-                            <span className="cursor-help" title="Years of NFL experience">Exp</span>
-                            {sortColumn === 'experience' ? (
                               sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
@@ -1549,7 +1516,7 @@ export function App() {
                           onClick={() => handleSort('byeWeek')}
                         >
                           <div className="flex items-center justify-center gap-1">
-                            <span className="cursor-help" title="Bye week for planning purposes">Bye</span>
+                            <span className="cursor-help" title="Bye Week - Week when the team doesn't play (important for roster planning)">Bye</span>
                             {sortColumn === 'byeWeek' ? (
                               sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
@@ -1560,7 +1527,7 @@ export function App() {
                           onClick={() => handleSort('sos')}
                         >
                           <div className="flex items-center justify-center gap-1">
-                            <span className="cursor-help" title="Strength of Schedule (1=easiest, 10=hardest)">SOS</span>
+                            <span className="cursor-help" title="Strength of Schedule (1-10) - How difficult the player's matchups are. Lower = easier schedule = better for fantasy">SOS</span>
                             {sortColumn === 'sos' ? (
                               sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
@@ -1682,17 +1649,41 @@ export function App() {
                           {featureFlags.useNewEvaluationSystem ? (
                             <>
                               {/* Intrinsic Value */}
-                              <td className="text-center px-0.5 py-0.5 text-[14px] font-bold w-9 text-blue-400">
-                                ${(() => {
+                              <td className="text-center px-0.5 py-0.5 text-[14px] font-bold w-9">
+                                {(() => {
                                   const evaluation = improvedEvaluations.find(e => e.id === player.id);
-                                  return evaluation?.intrinsicValue ? Math.round(evaluation.intrinsicValue) : '--';
+                                  const value = evaluation?.intrinsicValue;
+                                  if (!value) return '--';
+                                  const rounded = Math.round(value);
+                                  const colorClass = 
+                                    rounded >= 60 ? 'text-purple-400' :
+                                    rounded >= 40 ? 'text-indigo-400' :
+                                    rounded >= 25 ? 'text-blue-400' :
+                                    rounded >= 15 ? 'text-cyan-400' :
+                                    rounded >= 8 ? 'text-teal-400' :
+                                    rounded >= 3 ? 'text-green-400' :
+                                    rounded >= 1 ? 'text-lime-400' :
+                                    'text-gray-500';
+                                  return <span className={colorClass}>${rounded}</span>;
                                 })()}
                               </td>
                               {/* Market Price */}
-                              <td className="text-center px-0.5 py-0.5 text-[14px] w-9 text-orange-400">
-                                ${(() => {
+                              <td className="text-center px-0.5 py-0.5 text-[14px] w-9">
+                                {(() => {
                                   const evaluation = improvedEvaluations.find(e => e.id === player.id);
-                                  return evaluation?.marketPrice ? Math.round(evaluation.marketPrice) : '--';
+                                  const price = evaluation?.marketPrice;
+                                  if (!price) return '--';
+                                  const rounded = Math.round(price);
+                                  const colorClass = 
+                                    rounded >= 60 ? 'text-red-400' :
+                                    rounded >= 40 ? 'text-orange-400' :
+                                    rounded >= 25 ? 'text-amber-400' :
+                                    rounded >= 15 ? 'text-yellow-400' :
+                                    rounded >= 8 ? 'text-yellow-500' :
+                                    rounded >= 3 ? 'text-lime-500' :
+                                    rounded >= 1 ? 'text-green-500' :
+                                    'text-gray-500';
+                                  return <span className={colorClass}>${rounded}</span>;
                                 })()}
                               </td>
                               {/* Edge */}
@@ -1756,18 +1747,6 @@ export function App() {
                               {Number(player.adp).toFixed(1)}
                             </span>
                           </td>
-                          <td className={`text-center px-0.5 py-0.5 text-[13px] w-7 ${
-                            parseInt(getAdpRoundRange(player.adp)) <= 3 ? 'text-green-400 font-bold' :
-                            parseInt(getAdpRoundRange(player.adp)) <= 6 ? 'text-lime-400 font-semibold' :
-                            parseInt(getAdpRoundRange(player.adp)) <= 9 ? 'text-yellow-400' :
-                            parseInt(getAdpRoundRange(player.adp)) <= 12 ? 'text-orange-400' :
-                            parseInt(getAdpRoundRange(player.adp)) <= 15 ? 'text-red-400' :
-                            'text-gray-500'
-                          }`}>
-                            {getAdpRoundRange(player.adp)}
-                          </td>
-                          <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text-secondary w-8">{player.age}</td>
-                          <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text-secondary w-8">{player.experience || 0}</td>
                           <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text-secondary w-8">
                             <span className={`${
                               player.byeWeek === 5 || player.byeWeek === 6 || player.byeWeek === 7 || player.byeWeek === 9 ? 'text-orange-400' :
