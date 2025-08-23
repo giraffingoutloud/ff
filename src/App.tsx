@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu } from '@headlessui/react';
 import { 
@@ -26,6 +26,8 @@ import { SearchBar } from './components/SearchBar';
 import { DarkPlayerComparison } from './components/DarkPlayerComparison';
 import { ValueFinder } from './components/ValueFinder';
 import { DraftHistory } from './components/DraftHistory';
+import Dashboard from './components/Dashboard/Dashboard';
+import { PopOutWindow } from './components/PopOutWindow';
 import { playerDB } from './services/database';
 import { improvedCanonicalService } from './services/improvedCanonicalService';
 import { dynamicCVSCalculator } from './services/dynamicCVSCalculator';
@@ -37,6 +39,11 @@ import { dataValidator } from './services/dataValidator';
 import { hallucinationDetector } from './services/hallucinationDetector';
 import { dataProvenanceChecker } from './services/dataProvenanceChecker';
 import { badgeDataService } from './services/badgeDataService';
+import { EvaluationSettings } from './components/EvaluationSettings';
+import { Settings } from 'lucide-react';
+import { useImprovedEvaluation } from './hooks/useImprovedEvaluation';
+import { ImprovedValueDisplay, ValueBadge } from './components/ImprovedValueDisplay';
+import { featureFlags } from './config/featureFlags';
 import './utils/findPlayer';
 
 type ViewMode = 'grid' | 'list';
@@ -172,7 +179,7 @@ export function App() {
   const auctionTrackerInitialized = useRef(false);
   const [marketConditions, setMarketConditions] = useState<MarketConditions | null>(null);
   const [positionMarkets, setPositionMarkets] = useState<PositionMarket[]>([]);
-  const [sortColumn, setSortColumn] = useState<'name' | 'position' | 'team' | 'cvsScore' | 'projectedPoints' | 'receptions' | 'auctionValue' | 'adp' | 'round' | 'age' | 'byeWeek' | 'experience' | 'sos'>('cvsScore');
+  const [sortColumn, setSortColumn] = useState<'name' | 'position' | 'team' | 'cvsScore' | 'projectedPoints' | 'receptions' | 'auctionValue' | 'adp' | 'round' | 'age' | 'byeWeek' | 'experience' | 'sos' | 'intrinsicValue' | 'marketPrice' | 'edge'>('cvsScore');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [displayCount, setDisplayCount] = useState(75);
   const [selectedForComparison, setSelectedForComparison] = useState<Set<string>>(new Set());
@@ -190,6 +197,8 @@ export function App() {
     selectedTeamId: 'my-team' 
   });
   const [showDataQuality, setShowDataQuality] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
+  const [showDashboardPopout, setShowDashboardPopout] = useState(false);
   const [dataQualityIssues, setDataQualityIssues] = useState<{ 
     errors: number, 
     warnings: number, 
@@ -200,6 +209,15 @@ export function App() {
   const [customTeamNames, setCustomTeamNames] = useState<Record<string, string>>({});
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [tempTeamName, setTempTeamName] = useState<string>('');
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Use improved evaluation hook for new system
+  const { 
+    evaluations: improvedEvaluations, 
+    valueOpportunities,
+    overpriced,
+    reevaluate 
+  } = useImprovedEvaluation();
 
   // Load custom team names from localStorage on mount
   useEffect(() => {
@@ -450,7 +468,8 @@ export function App() {
       console.log('Set players in store:', extended.length);
     } catch (error) {
       console.error('Error initializing app:', error);
-      alert('Failed to load player data. Please check canonical_data/ folder.');
+      console.error('Stack trace:', error);
+      alert(`Failed to load player data: ${error.message || error}`);
       setPlayers([]);
     } finally {
       setIsLoading(false);
@@ -589,7 +608,7 @@ export function App() {
   };
 
   // Filter players based on search and filters
-  const filteredPlayers = extendedPlayers.filter(player => {
+  const filteredPlayers = useMemo(() => extendedPlayers.filter(player => {
     const matchesSearch = searchQuery === '' || 
       player.name.toLowerCase().includes(searchQuery.toLowerCase());
     
@@ -612,7 +631,7 @@ export function App() {
     }
     
     return matchesSearch && matchesPosition && isAvailable && matchesBadge;
-  });
+  }), [extendedPlayers, searchQuery, selectedPositions, showOnlyAvailable, selectedBadges]);
 
   // Get available players only
   const availablePlayers = extendedPlayers.filter(p => !p.isDrafted);
@@ -623,12 +642,28 @@ export function App() {
   }, [filteredPlayers.length, showOnlyAvailable]);
   
   // Sort players based on current sort column and direction
-  const sortedPlayers = [...filteredPlayers].sort((a, b) => {
+  const sortedPlayers = useMemo(() => [...filteredPlayers].sort((a, b) => {
     let aVal: any;
     let bVal: any;
     
+    // Special handling for new evaluation columns
+    if (sortColumn === 'intrinsicValue' || sortColumn === 'marketPrice' || sortColumn === 'edge') {
+      const aEval = improvedEvaluations.find(e => e.id === a.id);
+      const bEval = improvedEvaluations.find(e => e.id === b.id);
+      
+      if (sortColumn === 'intrinsicValue') {
+        aVal = aEval?.intrinsicValue || 0;
+        bVal = bEval?.intrinsicValue || 0;
+      } else if (sortColumn === 'marketPrice') {
+        aVal = aEval?.marketPrice || 0;
+        bVal = bEval?.marketPrice || 0;
+      } else if (sortColumn === 'edge') {
+        aVal = aEval?.edge || 0;
+        bVal = bEval?.edge || 0;
+      }
+    }
     // Special handling for round column (calculated from ADP)
-    if (sortColumn === 'round') {
+    else if (sortColumn === 'round') {
       aVal = Math.ceil((a.adp || 999) / 12);
       bVal = Math.ceil((b.adp || 999) / 12);
     } else {
@@ -649,17 +684,17 @@ export function App() {
     
     // Number comparison
     return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-  });
+  }), [filteredPlayers, sortColumn, sortDirection, improvedEvaluations]);
 
   // Handle column header click
-  const handleSort = (column: typeof sortColumn) => {
+  const handleSort = useCallback((column: typeof sortColumn) => {
     if (column === sortColumn) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortColumn(column);
       setSortDirection('desc');
     }
-  };
+  }, [sortColumn, sortDirection]);
 
   const handleDraftPlayer = async (player: ModernExtendedPlayer, teamId?: string, price?: number) => {
     // If price is provided (from AuctionWarRoom), draft directly
@@ -681,62 +716,38 @@ export function App() {
     }
   };
 
-  const confirmDraft = async () => {
-    if (draftPriceModal.player) {
-      console.log('Drafting player:', draftPriceModal.player.name);
-      console.log('Player ID:', draftPriceModal.player.id);
-      console.log('To team:', draftPriceModal.selectedTeamId);
-      console.log('For price:', draftPriceModal.price);
-      console.log('Teams before draft:', teams.map(t => ({ id: t.id, spent: t.spentBudget })));
+  const confirmDraft = useCallback(async () => {
+    if (!draftPriceModal.player) return;
+    
+    const { player, selectedTeamId, price } = draftPriceModal;
       
       try {
-        // First, ensure the player exists in the store by setting window.__players as fallback
-        (window as any).__players = extendedPlayers;
-        (window as any).__lastDraftedPlayer = draftPriceModal.player;
-        
-        console.log('Attempting to draft to team:', draftPriceModal.selectedTeamId);
-        console.log('Available team IDs:', teams.map(t => t.id));
-        
-        // Use the store's draftPlayer action
-        await draftPlayer(draftPriceModal.player.id, draftPriceModal.selectedTeamId, draftPriceModal.price);
-        
-        // Check if draft was successful by checking if player was added to draft history
-        const updatedState = useDraftStore.getState();
-        const wasPlayerDrafted = draftPriceModal.player && updatedState.draftHistory.some(p => p.id === draftPriceModal.player!.id);
-        
-        if (wasPlayerDrafted && draftPriceModal.player) {
-          // Mark player as drafted instead of removing
-          setExtendedPlayers(prev => prev.map(p => 
-            p.id === draftPriceModal.player!.id 
-              ? { ...p, isDrafted: true, purchasePrice: draftPriceModal.price }
-              : p
-          ));
-          console.log('Draft successful, marked player as drafted');
-        } else {
-          console.error('Draft failed - player was not added to draft history, keeping in available list');
-        }
-        
-        // Update auction market tracker
-        if (draftMode === 'auction' && wasPlayerDrafted && draftPriceModal.player) {
-          // Get the actual drafted player from draft history
-          const actualDraftedPlayer = useDraftStore.getState().draftHistory.find(
-            p => p.id === draftPriceModal.player!.id
-          );
-          if (actualDraftedPlayer) {
-            auctionMarketTracker.recordDraft(actualDraftedPlayer, draftPriceModal.selectedTeamId, draftPriceModal.price);
-          }
-        }
-        
-        // Close modal
+        // Close modal immediately for better responsiveness
         setDraftPriceModal({ player: null, show: false, price: 0, selectedTeamId: 'my-team' });
         
-        console.log('Draft completed successfully');
+        // Use the store's draftPlayer action
+        await draftPlayer(player.id, selectedTeamId, price);
+        
+        // Mark player as drafted with optimized update
+        setExtendedPlayers(prev => {
+          const newPlayers = [...prev];
+          const index = newPlayers.findIndex(p => p.id === player.id);
+          if (index !== -1) {
+            newPlayers[index] = { ...newPlayers[index], isDrafted: true, purchasePrice: price };
+          }
+          return newPlayers;
+        });
+        
+        // Update auction market tracker if needed
+        if (draftMode === 'auction') {
+          const draftedPlayer = { ...player, purchasePrice: price } as any;
+          auctionMarketTracker.recordDraft(draftedPlayer, selectedTeamId, price);
+        }
       } catch (error) {
         console.error('Error drafting player:', error);
         alert('Failed to draft player. Check console for details.');
       }
-    }
-  };
+  }, [draftPriceModal, draftPlayer, draftMode]);
 
   const handlePlayerDetail = (player: ModernExtendedPlayer) => {
     setSelectedPlayerDetail(player);
@@ -753,7 +764,8 @@ export function App() {
     );
   }
 
-  return (
+  try {
+    return (
     <div className="min-h-screen dark bg-dark-bg transition-colors duration-200">
       {/* Modern Header */}
       <header className="bg-dark-bg-secondary border-b border-dark-border sticky top-0 z-50 backdrop-blur-lg bg-opacity-90">
@@ -765,6 +777,7 @@ export function App() {
             </div>
             
             <div className="flex items-center space-x-4">
+              
               {/* Data Quality Indicator */}
               <button
                 onClick={() => setShowDataQuality(!showDataQuality)}
@@ -794,23 +807,34 @@ export function App() {
                 )}
               </button>
               
+              {/* Settings Button */}
+              <button
+                onClick={() => setShowSettings(true)}
+                className="p-2 rounded-lg bg-dark-bg hover:bg-dark-bg-secondary transition-colors text-dark-text-secondary hover:text-dark-text"
+                title="Evaluation Settings"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+              
               {/* View Mode Selector */}
-              <div className="flex items-center bg-dark-bg rounded-lg p-1">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center bg-dark-bg rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-md transition-colors ${
+                      viewMode === 'list' ? 'bg-draft-primary text-white' : 'text-dark-text-secondary'
+                    }`}
+                    title="List View"
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
                 <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'list' ? 'bg-draft-primary text-white' : 'text-dark-text-secondary'
-                  }`}
+                  onClick={() => setShowDashboardPopout(true)}
+                  className="p-2 bg-dark-bg rounded-lg text-dark-text-secondary hover:bg-draft-primary hover:text-white transition-colors"
+                  title="Grid View - Auction Draft Command Center"
                 >
-                  <List className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'grid' ? 'bg-draft-primary text-white' : 'text-dark-text-secondary'
-                  }`}
-                >
-                  <Users className="w-4 h-4" />
+                  <Grid className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -824,6 +848,26 @@ export function App() {
           <div className="grid grid-cols-12 gap-4">
             {/* Left Sidebar - Smart Recommendations + My Team */}
             <div className="col-span-12 lg:col-span-3 space-y-4">
+              {/* Value Opportunities - New System */}
+              {featureFlags.useNewEvaluationSystem && valueOpportunities.length > 0 && (
+                <div className="bg-dark-bg-secondary rounded-lg p-3 border border-dark-border">
+                  <h3 className="text-sm font-semibold text-green-400 mb-2">🎯 Top Value Opportunities</h3>
+                  <div className="space-y-1">
+                    {valueOpportunities.slice(0, 5).map((player) => (
+                      <div key={player.id} className="flex items-center justify-between text-xs">
+                        <span className="text-dark-text">{player.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-400">${player.intrinsicValue}</span>
+                          <span className="text-gray-500">→</span>
+                          <span className="text-orange-400">${player.marketPrice}</span>
+                          <span className="text-green-400 font-bold">+${Math.round(player.edge || 0)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               {/* Smart Recommendations - Above My Team */}
               <ComprehensiveHorizontalRecommendations
                 availablePlayers={availablePlayers}
@@ -1343,17 +1387,55 @@ export function App() {
                             ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
                         </th>
-                        <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-9"
-                          onClick={() => handleSort('cvsScore')}
-                        >
-                          <div className="flex items-center justify-center gap-1">
-                            <span className="cursor-help" title="Composite Value Score (0-100) - Weighted formula: Auction Value 23% + ADP 23% + Projected Points 28% + Position Scarcity 8% + Strength of Schedule 10% + Year-over-Year Trend 8%">CVS</span>
-                            {sortColumn === 'cvsScore' ? (
-                              sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-                            ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
-                          </div>
-                        </th>
+                        {featureFlags.useNewEvaluationSystem ? (
+                          <>
+                            <th 
+                              className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-9"
+                              onClick={() => handleSort('intrinsicValue')}
+                            >
+                              <div className="flex items-center justify-center gap-1">
+                                <span className="cursor-help" title="Intrinsic Value - Pure value based on projections (VORP methodology)">Value</span>
+                                {sortColumn === 'intrinsicValue' ? (
+                                  sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                                ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                              </div>
+                            </th>
+                            <th 
+                              className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-9"
+                              onClick={() => handleSort('marketPrice')}
+                            >
+                              <div className="flex items-center justify-center gap-1">
+                                <span className="cursor-help" title="Expected Market Price (from AAV/ADP)">Price</span>
+                                {sortColumn === 'marketPrice' ? (
+                                  sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                                ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                              </div>
+                            </th>
+                            <th 
+                              className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-9"
+                              onClick={() => handleSort('edge')}
+                            >
+                              <div className="flex items-center justify-center gap-1">
+                                <span className="cursor-help" title="Value - Price (positive = bargain)">Edge</span>
+                                {sortColumn === 'edge' ? (
+                                  sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                                ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                              </div>
+                            </th>
+                          </>
+                        ) : (
+                          <th 
+                            className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-9"
+                            onClick={() => handleSort('cvsScore')}
+                          >
+                            <div className="flex items-center justify-center gap-1">
+                              <span className="cursor-help" title="Composite Value Score (0-100) - Weighted formula: Auction Value 23% + ADP 23% + Projected Points 28% + Position Scarcity 8% + Strength of Schedule 10% + Year-over-Year Trend 8%">CVS</span>
+                              {sortColumn === 'cvsScore' ? (
+                                sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                              ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
+                            </div>
+                          </th>
+                        )}
                         <th 
                           className="text-center px-0.5 py-1 text-dark-text text-xs font-medium cursor-pointer hover:bg-dark-bg transition-colors w-9"
                           onClick={() => handleSort('projectedPoints')}
@@ -1566,16 +1648,49 @@ export function App() {
                             </span>
                           </td>
                           <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text-secondary w-10">{player.team}</td>
-                          <td className={`text-center px-0.5 py-0.5 text-[14px] font-bold w-9 ${
-                            player.cvsScore >= 90 ? 'text-emerald-400' :
-                            player.cvsScore >= 80 ? 'text-green-500' : 
-                            player.cvsScore >= 70 ? 'text-lime-500' :
-                            player.cvsScore >= 60 ? 'text-yellow-500' :
-                            player.cvsScore >= 50 ? 'text-amber-500' :
-                            player.cvsScore >= 40 ? 'text-orange-500' :
-                            player.cvsScore >= 30 ? 'text-red-500' :
-                            'text-gray-500'
-                          }`}>{isNaN(player.cvsScore) ? 'N/A' : player.cvsScore.toFixed(1)}</td>
+                          {featureFlags.useNewEvaluationSystem ? (
+                            <>
+                              {/* Intrinsic Value */}
+                              <td className="text-center px-0.5 py-0.5 text-[14px] font-bold w-9 text-blue-400">
+                                ${(() => {
+                                  const evaluation = improvedEvaluations.find(e => e.id === player.id);
+                                  return evaluation?.intrinsicValue ? Math.round(evaluation.intrinsicValue) : '--';
+                                })()}
+                              </td>
+                              {/* Market Price */}
+                              <td className="text-center px-0.5 py-0.5 text-[14px] w-9 text-orange-400">
+                                ${(() => {
+                                  const evaluation = improvedEvaluations.find(e => e.id === player.id);
+                                  return evaluation?.marketPrice ? Math.round(evaluation.marketPrice) : '--';
+                                })()}
+                              </td>
+                              {/* Edge */}
+                              <td className={`text-center px-0.5 py-0.5 text-[14px] font-bold w-9`}>
+                                {(() => {
+                                  const evaluation = improvedEvaluations.find(e => e.id === player.id);
+                                  if (!evaluation?.edge) return '--';
+                                  const edge = evaluation.edge;
+                                  const color = edge >= 5 ? 'text-green-500' :
+                                               edge >= 2 ? 'text-green-400' :
+                                               edge <= -5 ? 'text-red-500' :
+                                               edge <= -2 ? 'text-orange-400' :
+                                               'text-gray-400';
+                                  return <span className={color}>{edge > 0 ? '+' : ''}{Math.round(edge)}</span>;
+                                })()}
+                              </td>
+                            </>
+                          ) : (
+                            <td className={`text-center px-0.5 py-0.5 text-[14px] font-bold w-9 ${
+                              player.cvsScore >= 90 ? 'text-emerald-400' :
+                              player.cvsScore >= 80 ? 'text-green-500' : 
+                              player.cvsScore >= 70 ? 'text-lime-500' :
+                              player.cvsScore >= 60 ? 'text-yellow-500' :
+                              player.cvsScore >= 50 ? 'text-amber-500' :
+                              player.cvsScore >= 40 ? 'text-orange-500' :
+                              player.cvsScore >= 30 ? 'text-red-500' :
+                              'text-gray-500'
+                            }`}>{isNaN(player.cvsScore) ? 'N/A' : player.cvsScore.toFixed(1)}</td>
+                          )}
                           <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text w-9">{Math.round(player.projectedPoints)}</td>
                           <td className={`text-center px-0.5 py-0.5 text-[14px] w-9 ${
                             (player.receptions || 0) >= 80 ? 'text-purple-400' :
@@ -1935,6 +2050,19 @@ export function App() {
           </div>
         </div>
       }
+      
+      {/* Dashboard Pop-out Window */}
+      {featureFlags.useNewEvaluationSystem && (
+        <PopOutWindow
+          isOpen={showDashboardPopout}
+          onClose={() => setShowDashboardPopout(false)}
+          title="AUCTION DRAFT COMMAND CENTER"
+          defaultWidth={1200}
+          defaultHeight={800}
+        >
+          <Dashboard />
+        </PopOutWindow>
+      )}
 
       {/* Player Detail Modal */}
       <AnimatePresence>
@@ -2637,6 +2765,21 @@ export function App() {
         </DraggableModal>
       )}
 
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="max-w-4xl w-full mx-4">
+            <EvaluationSettings 
+              onClose={() => setShowSettings(false)}
+              onSettingsChange={() => {
+                // Trigger re-evaluation when settings change
+                window.location.reload(); // Simple reload for now
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Player Comparison Modal - Draggable */}
       {showComparisonModal && (
         <DraggableModal
@@ -2667,6 +2810,24 @@ export function App() {
 
     </div>
   );
+  } catch (error) {
+    console.error('Render error:', error);
+    return (
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl text-red-500 mb-4">Error Loading Application</h1>
+          <p className="text-dark-text mb-2">An error occurred while rendering the application.</p>
+          <p className="text-dark-text-secondary text-sm mb-4">Error: {error?.message || String(error)}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 }
 
 export default App;

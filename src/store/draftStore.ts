@@ -2,12 +2,23 @@ import { create } from 'zustand';
 import { Player, Team, DraftedPlayer, DraftSettings } from '../types';
 import { draftDB } from '../services/database';
 
-interface DraftState {
+export interface TeamBudget {
+  remaining: number;
+  maxBid: number;
+}
+
+export interface DraftState {
   // Core data
   players: Player[];
   teams: Team[];
   myTeam: Team;
   draftHistory: DraftedPlayer[];
+  
+  // Market context
+  draftedPlayers: Set<string>;
+  teamBudgets: Map<string, TeamBudget>;
+  teamRosters: Map<string, string[]>;
+  myTeamId: string;
   
   // UI state
   selectedPlayer: Player | null;
@@ -54,6 +65,23 @@ export const useDraftStore = create<DraftState>((set, get) => ({
     needs: ['QB', 'RB', 'RB', 'WR', 'WR', 'WR', 'TE'],
   },
   draftHistory: [],
+  draftedPlayers: new Set<string>(),
+  teamBudgets: new Map<string, TeamBudget>([
+    ['my-team', { remaining: 200, maxBid: 190 }],
+    ['team-2', { remaining: 200, maxBid: 190 }],
+    ['team-3', { remaining: 200, maxBid: 190 }],
+    ['team-4', { remaining: 200, maxBid: 190 }],
+    ['team-5', { remaining: 200, maxBid: 190 }],
+    ['team-6', { remaining: 200, maxBid: 190 }],
+    ['team-7', { remaining: 200, maxBid: 190 }],
+    ['team-8', { remaining: 200, maxBid: 190 }],
+    ['team-9', { remaining: 200, maxBid: 190 }],
+    ['team-10', { remaining: 200, maxBid: 190 }],
+    ['team-11', { remaining: 200, maxBid: 190 }],
+    ['team-12', { remaining: 200, maxBid: 190 }],
+  ]),
+  teamRosters: new Map<string, string[]>(),
+  myTeamId: 'my-team',
   selectedPlayer: null,
   settings: {
     leagueSize: 12,
@@ -129,6 +157,21 @@ export const useDraftStore = create<DraftState>((set, get) => ({
         // Remove the player from the players array (whether found in store or window)
         const updatedPlayers = state.players.filter(p => p.id !== playerId);
         
+        // Update market context
+        const updatedDraftedPlayers = new Set(state.draftedPlayers);
+        updatedDraftedPlayers.add(playerId);
+        
+        const updatedTeamBudgets = new Map(state.teamBudgets);
+        const currentBudget = updatedTeamBudgets.get(teamId) || { remaining: 200, maxBid: 190 };
+        const newRemaining = Math.max(0, currentBudget.remaining - price);
+        const spotsRemaining = state.settings.rosterSize - (state.teamRosters.get(teamId)?.length || 0) - 1;
+        const newMaxBid = Math.max(1, newRemaining - spotsRemaining);
+        updatedTeamBudgets.set(teamId, { remaining: newRemaining, maxBid: newMaxBid });
+        
+        const updatedTeamRosters = new Map(state.teamRosters);
+        const currentRoster = updatedTeamRosters.get(teamId) || [];
+        updatedTeamRosters.set(teamId, [...currentRoster, playerId]);
+        
         // Create a completely new teams array with new team objects
         const updatedTeams = state.teams.map(team => {
           if (team.id === teamId) {
@@ -147,6 +190,9 @@ export const useDraftStore = create<DraftState>((set, get) => ({
           players: updatedPlayers,
           draftHistory: [...state.draftHistory, draftedPlayer],
           teams: updatedTeams,
+          draftedPlayers: updatedDraftedPlayers,
+          teamBudgets: updatedTeamBudgets,
+          teamRosters: updatedTeamRosters,
           myTeam: state.myTeam.id === teamId
             ? {
                 ...state.myTeam,
@@ -183,9 +229,27 @@ export const useDraftStore = create<DraftState>((set, get) => ({
     const { purchasePrice, purchasedBy, draftPosition, timestamp, ...restoredPlayer } = lastDrafted;
     
     set(state => {
+      // Update market context
+      const updatedDraftedPlayers = new Set(state.draftedPlayers);
+      updatedDraftedPlayers.delete(lastDrafted.id);
+      
+      const updatedTeamBudgets = new Map(state.teamBudgets);
+      const currentBudget = updatedTeamBudgets.get(lastDrafted.purchasedBy) || { remaining: 0, maxBid: 0 };
+      const newRemaining = currentBudget.remaining + lastDrafted.purchasePrice;
+      const spotsRemaining = state.settings.rosterSize - (state.teamRosters.get(lastDrafted.purchasedBy)?.length || 0) + 1;
+      const newMaxBid = Math.max(1, newRemaining - spotsRemaining);
+      updatedTeamBudgets.set(lastDrafted.purchasedBy, { remaining: newRemaining, maxBid: newMaxBid });
+      
+      const updatedTeamRosters = new Map(state.teamRosters);
+      const currentRoster = updatedTeamRosters.get(lastDrafted.purchasedBy) || [];
+      updatedTeamRosters.set(lastDrafted.purchasedBy, currentRoster.filter(id => id !== lastDrafted.id));
+      
       const updatedState = {
         players: [...state.players, restoredPlayer],
         draftHistory: state.draftHistory.slice(0, -1),
+        draftedPlayers: updatedDraftedPlayers,
+        teamBudgets: updatedTeamBudgets,
+        teamRosters: updatedTeamRosters,
         teams: state.teams.map(team =>
           team.id === lastDrafted.purchasedBy
             ? {
