@@ -58,22 +58,22 @@ export const ValueFinder: React.FC = () => {
   }, [edges, draftHistory, minEdge, maxPrice, minValue]);
   
   return (
-    <div className="bg-gray-800 rounded-md p-3 xl:p-5 border border-gray-600">
-      <div className="flex items-center justify-between mb-4 xl:mb-5">
-        <h2 className="text-base xl:text-lg font-semibold text-white cursor-help" 
+    <div className="bg-gray-800 rounded-md p-2 sm:p-3 xl:p-5 border border-gray-600">
+      <div className="flex items-center justify-between mb-2 sm:mb-4 xl:mb-5">
+        <h2 className="text-sm sm:text-base xl:text-lg font-semibold text-white cursor-help" 
             title="Identifies the best value opportunities available right now. Shows players whose intrinsic value exceeds their market price. Edge = how much profit you get, Edge % = return on investment, CWE = confidence-weighted edge accounting for projection uncertainty.">
           Value Finder
         </h2>
       </div>
       
       {/* Filters - Compact single line */}
-      <div className="flex gap-2 items-center mb-4">
+      <div className="flex flex-wrap gap-1 sm:gap-2 items-center mb-2 sm:mb-4">
         <span className="text-xs text-gray-400">Min Edge:</span>
         <input
           type="number"
           value={minEdgeInput}
           onChange={(e) => setMinEdgeInput(e.target.value)}
-          className="w-14 bg-dark-bg border border-gray-600 rounded px-1 py-1 text-xs text-white"
+          className="w-12 sm:w-14 bg-dark-bg border border-gray-600 rounded px-1 py-0.5 sm:py-1 text-[10px] sm:text-xs text-white"
           placeholder="0"
         />
         <span className="text-xs text-gray-400">Max Price:</span>
@@ -81,7 +81,7 @@ export const ValueFinder: React.FC = () => {
           type="number"
           value={maxPriceInput}
           onChange={(e) => setMaxPriceInput(e.target.value)}
-          className="w-14 bg-dark-bg border border-gray-600 rounded px-1 py-1 text-xs text-white"
+          className="w-12 sm:w-14 bg-dark-bg border border-gray-600 rounded px-1 py-0.5 sm:py-1 text-[10px] sm:text-xs text-white"
           placeholder="200"
         />
         <span className="text-xs text-gray-400">Min Value:</span>
@@ -89,7 +89,7 @@ export const ValueFinder: React.FC = () => {
           type="number"
           value={minValueInput}
           onChange={(e) => setMinValueInput(e.target.value)}
-          className="w-14 bg-dark-bg border border-gray-600 rounded px-1 py-1 text-xs text-white"
+          className="w-12 sm:w-14 bg-dark-bg border border-gray-600 rounded px-1 py-0.5 sm:py-1 text-[10px] sm:text-xs text-white"
           placeholder="0"
         />
       </div>
@@ -98,14 +98,14 @@ export const ValueFinder: React.FC = () => {
       <div className="space-y-4">
         {/* By Raw Edge */}
         <div>
-          <h3 className="text-xs xl:text-base font-semibold text-cyan-400 mb-2">
+          <h3 className="text-[11px] sm:text-xs xl:text-base font-semibold text-cyan-400 mb-1 sm:mb-2">
             Best Edge ($)
           </h3>
           <div className="space-y-1">
             {opportunities.byEdge.length > 0 ? (
               opportunities.byEdge.slice(0, 3).map((edge) => (
-                <div key={edge.player.id} className="flex items-center justify-between text-xs xl:text-base">
-                  <span className="text-dark-text truncate max-w-[180px]">{edge.player.name}</span>
+                <div key={edge.player.id} className="flex items-center justify-between text-[10px] sm:text-xs xl:text-base">
+                  <span className="text-dark-text truncate max-w-[100px] sm:max-w-[180px]">{edge.player.name}</span>
                   <div className="flex items-center gap-2 font-mono">
                     <span className="text-gray-500">${Math.round(edge.intrinsicValue)}</span>
                     <span className="text-gray-600">→</span>
@@ -115,21 +115,21 @@ export const ValueFinder: React.FC = () => {
                 </div>
               ))
             ) : (
-              <div className="text-xs xl:text-base text-gray-500">No opportunities found</div>
+              <div className="text-[10px] sm:text-xs xl:text-base text-gray-500">No opportunities found</div>
             )}
           </div>
         </div>
         
         {/* By Edge Percentage */}
         <div>
-          <h3 className="text-xs xl:text-base font-semibold text-purple-400 mb-2">
+          <h3 className="text-[11px] sm:text-xs xl:text-base font-semibold text-purple-400 mb-1 sm:mb-2">
             Best Edge %
           </h3>
           <div className="space-y-1">
             {opportunities.byEdgePercent.length > 0 ? (
               opportunities.byEdgePercent.slice(0, 3).map((edge) => (
-                <div key={edge.player.id} className="flex items-center justify-between text-xs xl:text-base">
-                  <span className="text-dark-text truncate max-w-[180px]">{edge.player.name}</span>
+                <div key={edge.player.id} className="flex items-center justify-between text-[10px] sm:text-xs xl:text-base">
+                  <span className="text-dark-text truncate max-w-[100px] sm:max-w-[180px]">{edge.player.name}</span>
                   <div className="flex items-center gap-2 font-mono">
                     <span className="text-yellow-400">${Math.round(edge.marketPrice)}</span>
                     <span className="text-green-400 font-bold">+{safeToFixed(edge.edgePercent, 0)}%</span>
@@ -137,21 +137,21 @@ export const ValueFinder: React.FC = () => {
                 </div>
               ))
             ) : (
-              <div className="text-xs xl:text-base text-gray-500">No opportunities found</div>
+              <div className="text-[10px] sm:text-xs xl:text-base text-gray-500">No opportunities found</div>
             )}
           </div>
         </div>
         
         {/* By Confidence Weighted Edge */}
         <div>
-          <h3 className="text-xs xl:text-base font-semibold text-yellow-400 mb-2">
+          <h3 className="text-[11px] sm:text-xs xl:text-base font-semibold text-yellow-400 mb-1 sm:mb-2">
             Best CWE (Confidence)
           </h3>
           <div className="space-y-1">
             {opportunities.byCWE.length > 0 ? (
               opportunities.byCWE.slice(0, 3).map((edge) => (
-                <div key={edge.player.id} className="flex items-center justify-between text-xs xl:text-base">
-                  <span className="text-dark-text truncate max-w-[180px]">{edge.player.name}</span>
+                <div key={edge.player.id} className="flex items-center justify-between text-[10px] sm:text-xs xl:text-base">
+                  <span className="text-dark-text truncate max-w-[100px] sm:max-w-[180px]">{edge.player.name}</span>
                   <div className="flex items-center gap-2 font-mono">
                     <span className="text-gray-500 text-[10px] xl:text-xs">{safeToFixed((edge.confidence || 0) * 100, 0)}%</span>
                     <span className="text-yellow-400 font-bold">CWE:{safeToFixed(edge.confidenceWeightedEdge, 0)}</span>
@@ -159,21 +159,21 @@ export const ValueFinder: React.FC = () => {
                 </div>
               ))
             ) : (
-              <div className="text-xs xl:text-base text-gray-500">No opportunities found</div>
+              <div className="text-[10px] sm:text-xs xl:text-base text-gray-500">No opportunities found</div>
             )}
           </div>
         </div>
         
         {/* Budget Gems */}
         <div>
-          <h3 className="text-xs xl:text-base font-semibold text-blue-400 mb-2">
+          <h3 className="text-[11px] sm:text-xs xl:text-base font-semibold text-blue-400 mb-1 sm:mb-2">
             Budget Gems (&lt;$15)
           </h3>
           <div className="space-y-1">
             {opportunities.budgetGems.length > 0 ? (
               opportunities.budgetGems.map((edge) => (
-                <div key={edge.player.id} className="flex items-center justify-between text-xs xl:text-base">
-                  <span className="text-dark-text truncate max-w-[180px]">{edge.player.name}</span>
+                <div key={edge.player.id} className="flex items-center justify-between text-[10px] sm:text-xs xl:text-base">
+                  <span className="text-dark-text truncate max-w-[100px] sm:max-w-[180px]">{edge.player.name}</span>
                   <div className="flex items-center gap-2 font-mono">
                     <span className="text-blue-400">${Math.round(edge.marketPrice)}</span>
                     <span className="text-green-400 font-bold">+{safeToFixed(edge.edgePercent, 0)}%</span>
@@ -181,7 +181,7 @@ export const ValueFinder: React.FC = () => {
                 </div>
               ))
             ) : (
-              <div className="text-xs xl:text-base text-gray-500">No budget gems found</div>
+              <div className="text-[10px] sm:text-xs xl:text-base text-gray-500">No budget gems found</div>
             )}
           </div>
         </div>

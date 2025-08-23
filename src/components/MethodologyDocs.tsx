@@ -65,7 +65,7 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
-          <Section id="overview" title="Overview & Key Concepts" icon={<Calculator className="w-5 h-5 text-blue-400" />}>
+          <Section id="overview" title="Overview" icon={<Calculator className="w-5 h-5 text-blue-400" />}>
             <div className="space-y-4 text-dark-text-secondary">
               <p>
                 This tool uses three main factors to help you make optimal auction draft decisions:
@@ -269,7 +269,7 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
             </div>
           </Section>
 
-          <Section id="edge" title="Edge & Recommendations" icon={<BarChart className="w-5 h-5 text-red-400" />}>
+          <Section id="edge" title="Edge" icon={<BarChart className="w-5 h-5 text-red-400" />}>
             <div className="space-y-4 text-dark-text-secondary">
               <h4 className="font-semibold text-dark-text">What is Edge?</h4>
               <p>
@@ -364,7 +364,7 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
             </div>
           </Section>
 
-          <Section id="hardcoded" title="Hardcoded Values & Rationale" icon={<Code className="w-5 h-5 text-orange-400" />}>
+          <Section id="hardcoded" title="Hardcoded Values" icon={<Code className="w-5 h-5 text-orange-400" />}>
             <div className="space-y-4 text-dark-text-secondary">
               <p className="text-sm text-orange-400">
                 These values are hardcoded based on fantasy football theory and historical analysis. They cannot be derived from available data.

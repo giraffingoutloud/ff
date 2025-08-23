@@ -82,27 +82,28 @@ export const MyTeam: React.FC<MyTeamProps> = ({ team }) => {
   if (dsts.length === 0) needs.push('DST');
 
   return (
-    <div className="bg-white dark:bg-dark-bg-secondary rounded-lg shadow-lg p-6 border border-gray-200 dark:border-dark-border">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-dark-text flex items-center">
-          <User className="w-6 h-6 mr-2" />
-          My Team
+    <div className="bg-white dark:bg-dark-bg-secondary rounded-lg shadow-lg p-3 sm:p-6 border border-gray-200 dark:border-dark-border">
+      <div className="flex items-center justify-between mb-3 sm:mb-6">
+        <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-dark-text flex items-center">
+          <User className="w-5 sm:w-6 h-5 sm:h-6 mr-1 sm:mr-2" />
+          <span className="hidden sm:inline">My Team</span>
+          <span className="sm:hidden">Team</span>
         </h2>
-        <div className="flex items-center space-x-3">
-          <span className="text-base text-gray-500 dark:text-gray-400">Max Bid:</span>
-          <span className="font-bold text-lg text-draft-primary dark:text-blue-400">${maxBid}</span>
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <span className="text-sm sm:text-base text-gray-500 dark:text-gray-400">Max:</span>
+          <span className="font-bold text-base sm:text-lg text-draft-primary dark:text-blue-400">${maxBid}</span>
         </div>
       </div>
 
-      <div className="mb-6 p-4 bg-gray-50 dark:bg-dark-bg-tertiary rounded-lg">
+      <div className="mb-3 sm:mb-6 p-2 sm:p-4 bg-gray-50 dark:bg-dark-bg-tertiary rounded-lg">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div className="flex items-center">
-            <DollarSign className="w-5 h-5 mr-2 text-gray-600" />
-            <span className="text-base text-gray-600 dark:text-gray-400">Budget:</span>
+            <DollarSign className="w-4 sm:w-5 h-4 sm:h-5 mr-1 sm:mr-2 text-gray-600" />
+            <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Budget:</span>
           </div>
           <div className="text-left sm:text-right">
-            <span className="font-bold text-xl dark:text-dark-text">${remainingBudget}</span>
-            <span className="text-base text-gray-500 dark:text-gray-400"> / ${team.budget}</span>
+            <span className="font-bold text-lg sm:text-xl dark:text-dark-text">${remainingBudget}</span>
+            <span className="text-sm sm:text-base text-gray-500 dark:text-gray-400"> / ${team.budget}</span>
           </div>
         </div>
         <div className="mt-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
@@ -113,11 +114,11 @@ export const MyTeam: React.FC<MyTeamProps> = ({ team }) => {
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {rosterPositions.map((pos, index) => (
           <div
             key={`${pos.label}-${index}`}
-            className={`p-3 rounded-lg border ${
+            className={`p-2 sm:p-3 rounded-lg border ${
               pos.player 
                 ? 'bg-green-50 border-green-200' 
                 : pos.isRequired 
@@ -126,26 +127,26 @@ export const MyTeam: React.FC<MyTeamProps> = ({ team }) => {
             }`}
           >
             <div className="flex justify-between items-center gap-3">
-              <span className="text-base font-medium text-gray-700 dark:text-gray-300 flex-shrink-0 min-w-[50px]">
+              <span className="text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 flex-shrink-0 min-w-[40px] sm:min-w-[50px]">
                 {pos.label}
               </span>
               {pos.player ? (
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-xl font-semibold dark:text-dark-text truncate">{pos.player.name}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">${pos.player.purchasePrice}</span>
+                  <span className="text-base sm:text-xl font-semibold dark:text-dark-text truncate">{pos.player.name}</span>
+                  <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">${pos.player.purchasePrice}</span>
                 </div>
               ) : (
-                <span className="text-sm text-gray-400 dark:text-gray-500 italic">Empty</span>
+                <span className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 italic">Empty</span>
               )}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
+      <div className="mt-3 sm:mt-6 pt-3 sm:pt-5 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
-          <span className="text-base text-gray-600 dark:text-gray-400">Roster:</span>
-          <span className="font-semibold text-lg dark:text-dark-text">{team.roster.length} / 16</span>
+          <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Roster:</span>
+          <span className="font-semibold text-base sm:text-lg dark:text-dark-text">{team.roster.length} / 16</span>
         </div>
         {needs.length > 0 && (
           <div className="mt-3">

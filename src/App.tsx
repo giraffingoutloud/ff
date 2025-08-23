@@ -893,16 +893,17 @@ export function App() {
     <div className="min-h-screen dark bg-dark-bg transition-colors duration-200">
       {/* Modern Header */}
       <header className="bg-gradient-to-r from-gray-800 to-gray-700 border-b border-gray-600 sticky top-0 z-50">
-        <div className="w-full px-6 xl:px-10 py-3 xl:py-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 xl:gap-4">
-              <h1 className="text-lg xl:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent uppercase whitespace-nowrap">
-                Fantasy Auction Draft Optimizer
+        <div className="w-full px-3 sm:px-6 xl:px-10 py-2 sm:py-3 xl:py-5">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2 lg:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 xl:gap-4">
+              <h1 className="text-sm sm:text-lg xl:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent uppercase whitespace-nowrap">
+                <span className="hidden sm:inline">Fantasy Auction Draft Optimizer</span>
+                <span className="sm:hidden">Draft Optimizer</span>
               </h1>
             </div>
             
             {/* Market Status - Compressed */}
-            <div className="flex flex-wrap items-center gap-3 xl:gap-5 text-sm xl:text-lg">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 xl:gap-5 text-xs sm:text-sm xl:text-lg">
               {/* Draft Phase */}
               <div className="flex items-center gap-2">
                 <span className="text-gray-400 uppercase cursor-help" title="Current stage of the draft based on percentage of players drafted. Opening (0-10%), Early (10-25%), Middle (25-50%), Late (50-75%), Closing (75-90%), Endgame (90-100%). Each phase has different strategy implications.">
@@ -1039,7 +1040,7 @@ export function App() {
         <div className="w-full px-6 xl:px-10 py-6 xl:py-10">
           <div className="grid grid-cols-12 gap-4">
             {/* Left Sidebar - Smart Recommendations + My Team */}
-            <div className="col-span-12 xl:col-span-2 2xl:col-span-2 space-y-4">
+            <div className="col-span-12 lg:col-span-3 xl:col-span-2 2xl:col-span-2 space-y-4 order-2 lg:order-1">
               
               {/* My Team Box - Below Smart Recommendations */}
               <div className="bg-gray-800 rounded-md p-3 xl:p-5 border border-gray-600">
@@ -1138,7 +1139,7 @@ export function App() {
             </div>
 
             {/* Center - Player Grid/List */}
-            <div className="col-span-12 lg:col-span-8 xl:col-span-8 space-y-4">
+            <div className="col-span-12 lg:col-span-6 xl:col-span-8 space-y-4 order-1 lg:order-2">
               {/* Comparison Toolbar */}
               {selectedForComparison.size > 0 && (
                 <div className="inline-flex bg-draft-primary/10 border border-draft-primary rounded-xl p-1 items-center gap-3">
@@ -1239,7 +1240,7 @@ export function App() {
                     </div>
                     
                     {/* Second row - Position filter buttons */}
-                    <div className="flex gap-1 xl:gap-2 mb-3">
+                    <div className="flex flex-wrap gap-0.5 sm:gap-1 xl:gap-2 mb-3">
                       {(['QB', 'RB', 'WR', 'TE', 'K', 'DST'] as Position[]).map(position => (
                         <button
                           key={position}
@@ -1256,7 +1257,7 @@ export function App() {
                             }
                             setSelectedPositions(newSelection);
                           }}
-                          className={`text-xs xl:text-sm font-bold py-0.5 xl:py-1 px-1 xl:px-1.5 rounded flex-1 h-5 xl:h-6 min-h-[1.25rem] bg-position-${position.toLowerCase()} text-white cursor-pointer ${
+                          className={`text-[10px] sm:text-xs xl:text-sm font-bold py-0.5 xl:py-1 px-0.5 sm:px-1 xl:px-1.5 rounded flex-1 h-4 sm:h-5 xl:h-6 min-h-[1rem] sm:min-h-[1.25rem] bg-position-${position.toLowerCase()} text-white cursor-pointer ${
                             selectedPositions.has(position)
                               ? 'opacity-100'
                               : 'opacity-40 hover:opacity-70'
@@ -1283,7 +1284,7 @@ export function App() {
                           setShowOnlyAvailable(newState);
                           console.log('State set to:', newState);
                         }}
-                        className={`text-xs xl:text-sm font-bold py-0.5 xl:py-1 px-1 xl:px-1.5 rounded flex-1 h-5 xl:h-6 min-h-[1.25rem] bg-green-600 text-white cursor-pointer ${
+                        className={`text-[10px] sm:text-xs xl:text-sm font-bold py-0.5 xl:py-1 px-0.5 sm:px-1 xl:px-1.5 rounded flex-1 h-4 sm:h-5 xl:h-6 min-h-[1rem] sm:min-h-[1.25rem] bg-green-600 text-white cursor-pointer ${
                           showOnlyAvailable 
                             ? 'opacity-100' 
                             : 'opacity-40 hover:opacity-70'
@@ -1543,22 +1544,22 @@ export function App() {
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-xs xl:text-base font-medium cursor-pointer hover:bg-dark-bg transition-colors w-12"
+                          className="text-center px-0.5 py-1 text-dark-text text-[10px] sm:text-xs xl:text-base font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8 sm:w-12"
                           onClick={() => handleSort('position')}
                         >
                           <div className="flex items-center justify-center gap-1">
-                            <span className="cursor-help" title="Position - QB/RB/WR/TE/K/DST">Pos</span>
+                            <span className="cursor-help text-[10px] sm:text-xs xl:text-base" title="Position - QB/RB/WR/TE/K/DST"><span className="hidden sm:inline">Pos</span><span className="sm:hidden">P</span></span>
                             {sortColumn === 'position' ? (
                               sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-xs xl:text-base font-medium cursor-pointer hover:bg-dark-bg transition-colors w-14"
+                          className="text-center px-0.5 py-1 text-dark-text text-[10px] sm:text-xs xl:text-base font-medium cursor-pointer hover:bg-dark-bg transition-colors w-10 sm:w-14"
                           onClick={() => handleSort('team')}
                         >
                           <div className="flex items-center justify-center gap-1">
-                            <span className="cursor-help" title="NFL Team - Player's current team">Team</span>
+                            <span className="cursor-help text-[10px] sm:text-xs xl:text-base" title="NFL Team - Player's current team"><span className="hidden sm:inline">Team</span><span className="sm:hidden">Tm</span></span>
                             {sortColumn === 'team' ? (
                               sortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                             ) : <ArrowUpDown className="w-3 h-3 opacity-50" />}
@@ -1669,7 +1670,7 @@ export function App() {
                           </th>
                         )}
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-xs xl:text-base font-medium cursor-pointer hover:bg-dark-bg transition-colors w-14"
+                          className="text-center px-0.5 py-1 text-dark-text text-[10px] sm:text-xs xl:text-base font-medium cursor-pointer hover:bg-dark-bg transition-colors w-10 sm:w-14"
                           onClick={() => handleSort('projectedPoints')}
                         >
                           <div className="flex items-center justify-center gap-1">
@@ -1680,7 +1681,7 @@ export function App() {
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-xs xl:text-base font-medium cursor-pointer hover:bg-dark-bg transition-colors w-14"
+                          className="text-center px-0.5 py-1 text-dark-text text-[10px] sm:text-xs xl:text-base font-medium cursor-pointer hover:bg-dark-bg transition-colors w-10 sm:w-14"
                           onClick={() => handleSort('receptions')}
                         >
                           <div className="flex items-center justify-center gap-1">
@@ -1691,7 +1692,7 @@ export function App() {
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-xs xl:text-base font-medium cursor-pointer hover:bg-dark-bg transition-colors w-12"
+                          className="text-center px-0.5 py-1 text-dark-text text-[10px] sm:text-xs xl:text-base font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8 sm:w-12"
                           onClick={() => handleSort('byeWeek')}
                         >
                           <div className="flex items-center justify-center gap-1">
@@ -1702,7 +1703,7 @@ export function App() {
                           </div>
                         </th>
                         <th 
-                          className="text-center px-0.5 py-1 text-dark-text text-xs xl:text-base font-medium cursor-pointer hover:bg-dark-bg transition-colors w-12"
+                          className="text-center px-0.5 py-1 text-dark-text text-[10px] sm:text-xs xl:text-base font-medium cursor-pointer hover:bg-dark-bg transition-colors w-8 sm:w-12"
                           onClick={() => handleSort('sos')}
                         >
                           <div className="flex items-center justify-center gap-1">
@@ -1735,7 +1736,7 @@ export function App() {
                               Draft
                             </button>
                           </td>
-                          <td className="px-1 py-0.5 text-dark-text text-[16px] xl:text-xl font-medium w-32 xl:w-36">
+                          <td className="px-0.5 sm:px-1 py-0.5 text-dark-text text-xs sm:text-[16px] xl:text-xl font-medium w-24 sm:w-32 xl:w-36">
                             <div className="flex items-center gap-1">
                               <span className="truncate" title={player.name}>{player.name}</span>
                               <div className="flex items-center gap-0.5">
@@ -1833,11 +1834,11 @@ export function App() {
                               {player.position}
                             </span>
                           </td>
-                          <td className="text-center px-0.5 py-0.5 text-[14px] xl:text-lg text-dark-text-secondary w-14">{player.team}</td>
+                          <td className="text-center px-0.5 py-0.5 text-[10px] sm:text-[14px] xl:text-lg text-dark-text-secondary w-10 sm:w-14">{player.team}</td>
                           {featureFlags.useNewEvaluationSystem ? (
                             <>
                               {/* Intrinsic Value */}
-                              <td className="text-center px-0.5 py-0.5 text-[13px] xl:text-lg font-mono w-14">
+                              <td className="text-center px-0.5 py-0.5 text-[10px] sm:text-[13px] xl:text-lg font-mono w-10 sm:w-14">
                                 {(() => {
                                   const evaluation = improvedEvaluations.find(e => e.id === player.id);
                                   const value = evaluation?.intrinsicValue;
@@ -1856,7 +1857,7 @@ export function App() {
                                 })()}
                               </td>
                               {/* Market Price */}
-                              <td className="text-center px-0.5 py-0.5 text-[13px] xl:text-lg font-mono w-14">
+                              <td className="text-center px-0.5 py-0.5 text-[10px] sm:text-[13px] xl:text-lg font-mono w-10 sm:w-14">
                                 {(() => {
                                   const evaluation = improvedEvaluations.find(e => e.id === player.id);
                                   const price = evaluation?.marketPrice;
@@ -1875,7 +1876,7 @@ export function App() {
                                 })()}
                               </td>
                               {/* AAV */}
-                              <td className={`text-center px-0.5 py-0.5 text-[13px] xl:text-lg font-mono w-16 ${
+                              <td className={`text-center px-0.5 py-0.5 text-[10px] sm:text-[13px] xl:text-lg font-mono w-12 sm:w-16 ${
                                 (player.auctionValue || 0) >= 60 ? 'text-pink-400' :
                                 (player.auctionValue || 0) >= 40 ? 'text-purple-400' :
                                 (player.auctionValue || 0) >= 25 ? 'text-indigo-400' :
@@ -1886,7 +1887,7 @@ export function App() {
                                 'text-gray-500'
                               }`}>{player.auctionValue && player.auctionValue > 0 ? `$${Math.round(player.auctionValue)}` : 'N/A'}</td>
                               {/* Edge */}
-                              <td className={`text-center px-0.5 py-0.5 text-[13px] xl:text-lg font-mono w-14`}>
+                              <td className={`text-center px-0.5 py-0.5 text-[10px] sm:text-[13px] xl:text-lg font-mono w-10 sm:w-14`}>
                                 {(() => {
                                   const evaluation = improvedEvaluations.find(e => e.id === player.id);
                                   if (!evaluation?.edge) return '--';
@@ -1900,7 +1901,7 @@ export function App() {
                                 })()}
                               </td>
                               {/* Edge % */}
-                              <td className={`text-center px-0.5 py-0.5 text-[13px] xl:text-lg font-mono w-14`}>
+                              <td className={`text-center px-0.5 py-0.5 text-[10px] sm:text-[13px] xl:text-lg font-mono w-10 sm:w-14`}>
                                 {(() => {
                                   const evaluation = improvedEvaluations.find(e => e.id === player.id);
                                   if (!evaluation?.edgePercent) return '--';
@@ -1914,7 +1915,7 @@ export function App() {
                                 })()}
                               </td>
                               {/* Confidence */}
-                              <td className={`text-center px-0.5 py-0.5 text-[13px] xl:text-lg font-mono w-12`}>
+                              <td className={`text-center px-0.5 py-0.5 text-[10px] sm:text-[13px] xl:text-lg font-mono w-8 sm:w-12`}>
                                 {(() => {
                                   const edgeData = getPlayerEdge(player.id);
                                   if (!edgeData?.confidence) return '--';
@@ -1927,7 +1928,7 @@ export function App() {
                                 })()}
                               </td>
                               {/* CWE */}
-                              <td className={`text-center px-0.5 py-0.5 text-[13px] xl:text-lg font-mono w-14`}>
+                              <td className={`text-center px-0.5 py-0.5 text-[10px] sm:text-[13px] xl:text-lg font-mono w-10 sm:w-14`}>
                                 {(() => {
                                   const edgeData = getPlayerEdge(player.id);
                                   if (!edgeData?.confidenceWeightedEdge) return '--';
@@ -1941,7 +1942,7 @@ export function App() {
                                 })()}
                               </td>
                               {/* ADP */}
-                              <td className={`text-center px-0.5 py-0.5 text-[13px] xl:text-lg font-mono w-14 ${
+                              <td className={`text-center px-0.5 py-0.5 text-[10px] sm:text-[13px] xl:text-lg font-mono w-10 sm:w-14 ${
                                 player.adp <= 12 ? 'text-green-400' :
                                 player.adp <= 24 ? 'text-lime-400' :
                                 player.adp <= 36 ? 'text-yellow-400' :
@@ -1958,7 +1959,7 @@ export function App() {
                               </td>
                             </>
                           ) : (
-                            <td className={`text-center px-0.5 py-0.5 text-[13px] xl:text-lg font-mono w-14 ${
+                            <td className={`text-center px-0.5 py-0.5 text-[10px] sm:text-[13px] xl:text-lg font-mono w-10 sm:w-14 ${
                               player.cvsScore >= 90 ? 'text-emerald-400' :
                               player.cvsScore >= 80 ? 'text-green-500' : 
                               player.cvsScore >= 70 ? 'text-lime-500' :
@@ -1969,7 +1970,7 @@ export function App() {
                               'text-gray-500'
                             }`}>{isNaN(player.cvsScore) ? 'N/A' : safeToFixed(player.cvsScore, 0)}</td>
                           )}
-                          <td className={`text-center px-0.5 py-0.5 text-[13px] xl:text-lg font-mono w-14 ${
+                          <td className={`text-center px-0.5 py-0.5 text-[10px] sm:text-[13px] xl:text-lg font-mono w-10 sm:w-14 ${
                             player.projectedPoints >= 300 ? 'text-purple-400' :
                             player.projectedPoints >= 250 ? 'text-indigo-400' :
                             player.projectedPoints >= 200 ? 'text-blue-400' :
@@ -1979,7 +1980,7 @@ export function App() {
                             player.projectedPoints >= 50 ? 'text-lime-400' :
                             'text-gray-500'
                           }`}>{Math.round(player.projectedPoints)}</td>
-                          <td className={`text-center px-0.5 py-0.5 text-[13px] xl:text-lg font-mono w-14 ${
+                          <td className={`text-center px-0.5 py-0.5 text-[10px] sm:text-[13px] xl:text-lg font-mono w-10 sm:w-14 ${
                             (player.receptions || 0) >= 80 ? 'text-purple-400' :
                             (player.receptions || 0) >= 60 ? 'text-blue-400' :
                             (player.receptions || 0) >= 40 ? 'text-cyan-400' :
@@ -1987,7 +1988,7 @@ export function App() {
                             (player.receptions || 0) >= 10 ? 'text-gray-400' :
                             'text-gray-600'
                           }`}>+{Math.round(player.receptions || 0)}</td>
-                          <td className="text-center px-0.5 py-0.5 text-[13px] xl:text-lg font-mono text-dark-text-secondary w-12">
+                          <td className="text-center px-0.5 py-0.5 text-[10px] sm:text-[13px] xl:text-lg font-mono text-dark-text-secondary w-8 sm:w-12">
                             <span className={`${
                               player.byeWeek === 5 || player.byeWeek === 6 || player.byeWeek === 7 || player.byeWeek === 9 ? 'text-orange-400' :
                               player.byeWeek === 10 || player.byeWeek === 11 || player.byeWeek === 12 || player.byeWeek === 14 ? 'text-yellow-400' :
@@ -2043,7 +2044,7 @@ export function App() {
             </div>
 
             {/* Right Sidebar - Auction Analytics & Team Budgets */}
-            <div className="col-span-12 lg:col-span-2 xl:col-span-2 space-y-4">
+            <div className="col-span-12 lg:col-span-3 xl:col-span-2 space-y-4 order-3 lg:order-3">
               {/* Critical Moments & Position Scarcity - Combined */}
               <CriticalMoments 
                 moments={dashboardData.criticalMoments} 
