@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Dual ADP Loading</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        .header {
+            color: #4ade80;
+            font-size: 20px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #4ade80;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 5px;
+        }
+        .section-title {
+            color: #60a5fa;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th {
+            background: #374151;
+            padding: 8px;
+            text-align: left;
+            color: #fbbf24;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #374151;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .warning { color: #fbbf24; }
+        .info { color: #60a5fa; }
+        .loading { color: #a78bfa; }
+        #results { white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="header">DUAL ADP LOADING VERIFICATION TEST</div>
+    
+    <div class="section">
+        <div class="section-title">Test Status</div>
+        <div id="status" class="loading">Initializing test...</div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Test Results</div>
+        <div id="results"></div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Player Comparison Table</div>
+        <table id="playerTable">
+            <thead>
+                <tr>
+                    <th>Player Name</th>
+                    <th>Position</th>
+                    <th>ESPN ADP</th>
+                    <th>Auction Value</th>
+                    <th>Data Source</th>
+                </tr>
+            </thead>
+            <tbody id="playerData"></tbody>
+        </table>
+    </div>
+
+    <script type="module">
+        const statusEl = document.getElementById('status');
+        const resultsEl = document.getElementById('results');
+        const playerDataEl = document.getElementById('playerData');
+        
+        function log(message, type = 'info') {
+            const colorClass = type;
+            const timestamp = new Date().toLocaleTimeString();
+            resultsEl.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+        }
+        
+        async function loadRawCSV(url) {
+            const response = await fetch(url);
+            const text = await response.text();
+            return text;
+        }
+        
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(line => line.trim());
+            const headers = lines[0].split(',').map(h => h.trim().replace(/["\uFEFF]/g, ''));
+            const rows = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                const row = {};
+                headers.forEach((header, index) => {
+                    row[header] = values[index] || '';
+                });
+                rows.push(row);
+            }
+            return rows;
+        }
+        
+        async function runTest() {
+            try {
+                log('Starting dual ADP verification test...', 'info');
+                statusEl.textContent = 'Loading data files...';
+                statusEl.className = 'loading';
+                
+                // Load raw CSV files
+                log('Loading adp0_2025.csv for auction values...', 'info');
+                const adp0Text = await loadRawCSV('/canonical_data/adp/adp0_2025.csv');
+                const adp0Data = parseCSV(adp0Text);
+                log(`✓ Loaded ${adp0Data.length} rows from adp0`, 'success');
+                
+                log('Loading adp1_2025.csv for ESPN ADP...', 'info');
+                const adp1Text = await loadRawCSV('/canonical_data/adp/adp1_2025.csv');
+                const adp1Data = parseCSV(adp1Text);
+                log(`✓ Loaded ${adp1Data.length} rows from adp1`, 'success');
+                
+                // Now load the actual app data
+                log('Loading app player data...', 'info');
+                const { improvedCanonicalService } = await import('/src/services/improvedCanonicalService.ts');
+                const players = await improvedCanonicalService.initialize();
+                log(`✓ App loaded ${players.length} total players`, 'success');
+                
+                statusEl.textContent = 'Verifying data integration...';
+                
+                // Test specific players
+                const testPlayers = [
+                    "Ja'Marr Chase",
+                    "Bijan Robinson", 
+                    "Justin Jefferson",
+                    "CeeDee Lamb",
+                    "Tyreek Hill"
+                ];
+                
+                log('\n=== VERIFYING TOP PLAYERS ===', 'warning');
+                
+                for (const playerName of testPlayers) {
+                    // Find in each source
+                    const adp0Player = adp0Data.find(p => p['Full Name'] === playerName);
+                    const adp1Player = adp1Data.find(p => p['Name'] === playerName);
+                    const appPlayer = players.find(p => p.name === playerName);
+                    
+                    if (!appPlayer) {
+                        log(`✗ ${playerName}: NOT FOUND in app data!`, 'error');
+                        continue;
+                    }
+                    
+                    const adp0ADP = adp0Player ? parseFloat(adp0Player['ADP']) : null;
+                    const adp1ESPN = adp1Player ? parseFloat(adp1Player['ESPN']) : null;
+                    const adp0Auction = adp0Player ? parseFloat(adp0Player['Auction Value']) : null;
+                    
+                    log(`\n${playerName}:`, 'info');
+                    log(`  adp0 ADP: ${adp0ADP || 'N/A'}`, 'info');
+                    log(`  adp1 ESPN ADP: ${adp1ESPN || 'N/A'}`, 'info');
+                    log(`  adp0 Auction: $${adp0Auction || 'N/A'}`, 'info');
+                    log(`  App ADP: ${appPlayer.adp || 'N/A'}`, appPlayer.adp === adp1ESPN ? 'success' : 'warning');
+                    log(`  App Auction: $${appPlayer.auctionValue || 'N/A'}`, appPlayer.auctionValue === adp0Auction ? 'success' : 'warning');
+                    
+                    // Add to table
+                    const row = playerDataEl.insertRow();
+                    row.innerHTML = `
+                        <td>${playerName}</td>
+                        <td>${appPlayer.position}</td>
+                        <td>${appPlayer.adp ? appPlayer.adp.toFixed(1) : 'N/A'}</td>
+                        <td>$${appPlayer.auctionValue || 'N/A'}</td>
+                        <td>${appPlayer.adp === adp1ESPN ? 'ESPN (adp1)' : appPlayer.adp === adp0ADP ? 'Generic (adp0)' : 'Unknown'}</td>
+                    `;
+                    
+                    // Verify correct source
+                    if (adp1ESPN && appPlayer.adp !== adp1ESPN) {
+                        log(`  ⚠ WARNING: Should use ESPN ADP ${adp1ESPN} but using ${appPlayer.adp}`, 'error');
+                    }
+                    if (adp0Auction && appPlayer.auctionValue !== adp0Auction) {
+                        log(`  ⚠ WARNING: Auction value mismatch!`, 'error');
+                    }
+                }
+                
+                // Summary statistics
+                log('\n=== SUMMARY STATISTICS ===', 'warning');
+                
+                const withADP = players.filter(p => p.adp && p.adp > 0 && p.adp < 500).length;
+                const withAuction = players.filter(p => p.auctionValue && p.auctionValue > 0).length;
+                
+                log(`Players with valid ADP: ${withADP}`, 'info');
+                log(`Players with auction values: ${withAuction}`, 'info');
+                
+                // Check for injury data (should NOT be present from adp1)
+                log('\n=== INJURY DATA CHECK ===', 'warning');
+                const adp1WithInjury = adp1Data.filter(p => p['Injury'] && p['Injury'].trim()).length;
+                log(`adp1 has ${adp1WithInjury} players with injury data`, 'info');
+                
+                // Check if any app players have injury data that matches adp1
+                let injuryMatches = 0;
+                for (const player of players) {
+                    if (player.injuryStatus && player.injuryStatus !== 'Healthy') {
+                        const adp1Match = adp1Data.find(p => p['Name'] === player.name);
+                        if (adp1Match && adp1Match['Injury']) {
+                            injuryMatches++;
+                            log(`  Found injury match: ${player.name} - ${player.injuryStatus}`, 'warning');
+                        }
+                    }
+                }
+                
+                if (injuryMatches === 0) {
+                    log('✓ GOOD: No injury data from adp1 is being used', 'success');
+                } else {
+                    log(`✗ BAD: Found ${injuryMatches} players using adp1 injury data!`, 'error');
+                }
+                
+                statusEl.textContent = 'Test complete!';
+                statusEl.className = 'success';
+                
+                log('\n=== TEST COMPLETE ===', 'success');
+                
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'error');
+                console.error(error);
+                statusEl.textContent = 'Test failed!';
+                statusEl.className = 'error';
+            }
+        }
+        
+        // Run test when page loads
+        runTest();
+    </script>
+</body>
+</html>

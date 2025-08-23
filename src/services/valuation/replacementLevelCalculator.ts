@@ -144,6 +144,8 @@ export class ReplacementLevelCalculator {
     // Allocate flex slots optimally
     const flexSlots = (this.leagueSettings.rosterRequirements.FLEX?.count || 0) * this.leagueSettings.numTeams;
     
+    let flexReplacementLevel = 0; // Track the true flex replacement
+    
     for (let i = 0; i < flexSlots; i++) {
       // Get next best player at each position
       const nextRB = rbPlayers[allocated.RB]?.projectedPoints || 0;
@@ -169,17 +171,20 @@ export class ReplacementLevelCalculator {
       }
     }
     
-    // Get replacement levels at final allocated counts
-    const rbReplacement = rbPlayers[allocated.RB - 1]?.projectedPoints || 0;
-    const wrReplacement = wrPlayers[allocated.WR - 1]?.projectedPoints || 0;
-    const teReplacement = tePlayers[allocated.TE - 1]?.projectedPoints || 0;
-    const qbReplacement = this.leagueSettings.isSuperFlex
-      ? (qbPlayers[allocated.QB - 1]?.projectedPoints || 0)
-      : Infinity; // Don't consider QB if not superflex
+    // CRITICAL FIX: The flex replacement is the BEST player who didn't make it
+    // This is the player who would have been taken if there was one more flex slot
+    const nextRB = rbPlayers[allocated.RB]?.projectedPoints || 0;
+    const nextWR = wrPlayers[allocated.WR]?.projectedPoints || 0;
+    const nextTE = tePlayers[allocated.TE]?.projectedPoints || 0;
+    const nextQB = this.leagueSettings.isSuperFlex 
+      ? (qbPlayers[allocated.QB]?.projectedPoints || 0)
+      : 0;
     
-    // Return the minimum (last starter across all flex positions)
-    const minReplacement = Math.min(rbReplacement, wrReplacement, teReplacement, qbReplacement);
-    return minReplacement * 1.05; // Small uplift for flex streaming
+    // The true flex replacement is the best remaining player
+    flexReplacementLevel = Math.max(nextRB, nextWR, nextTE, nextQB);
+    
+    // Return the flex replacement level with small streaming uplift
+    return flexReplacementLevel * 1.05; // Small uplift for flex streaming
   }
 
   /**

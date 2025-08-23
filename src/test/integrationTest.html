@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Integration Test - Dual ADP Loading</title>
+    <style>
+        body { 
+            background: #1a1a1a; 
+            color: #e0e0e0; 
+            font-family: monospace; 
+            padding: 20px;
+        }
+        .pass { color: #4ade80; }
+        .fail { color: #f87171; }
+        .warn { color: #fbbf24; }
+        .info { color: #60a5fa; }
+        h1 { color: #60a5fa; }
+        table {
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #374151;
+            padding: 8px;
+            text-align: left;
+        }
+        th { background: #374151; }
+        #log { 
+            background: #0a0a0a; 
+            padding: 10px; 
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Integration Test - Dual ADP Loading</h1>
+    <div id="status">Loading...</div>
+    <div id="results"></div>
+    <div id="log"></div>
+    
+    <script type="module">
+        const log = (msg, type = 'info') => {
+            const logEl = document.getElementById('log');
+            const classes = { pass: 'pass', fail: 'fail', warn: 'warn', info: 'info' };
+            logEl.innerHTML += `<span class="${classes[type]}">${msg}</span>\n`;
+        };
+        
+        const setStatus = (msg, type = 'info') => {
+            const statusEl = document.getElementById('status');
+            statusEl.className = type;
+            statusEl.textContent = msg;
+        };
+        
+        async function runTest() {
+            try {
+                log('Starting integration test...', 'info');
+                setStatus('Importing service...', 'info');
+                
+                // Import the actual service
+                const { improvedCanonicalService } = await import('/src/services/improvedCanonicalService.ts');
+                
+                log('Service imported, initializing...', 'info');
+                setStatus('Loading player data...', 'info');
+                
+                // Initialize and get players
+                const players = await improvedCanonicalService.initialize();
+                
+                log(`Loaded ${players.length} players`, 'pass');
+                
+                // Test specific players
+                const testCases = [
+                    { name: "Ja'Marr Chase", expectedADP: 1.56, expectedAuction: 59 },
+                    { name: "Bijan Robinson", expectedADP: 3.08, expectedAuction: 57 },
+                    { name: "Justin Jefferson", expectedADP: 4.76, expectedAuction: 56 },
+                    { name: "CeeDee Lamb", expectedADP: 6.97, expectedAuction: 54 },
+                    { name: "Tyreek Hill", expectedADP: 30.86, expectedAuction: 32 }
+                ];
+                
+                let allPassed = true;
+                const resultsEl = document.getElementById('results');
+                
+                // Create results table
+                let tableHtml = '<table><tr><th>Player</th><th>ESPN ADP</th><th>Expected</th><th>Auction</th><th>Expected</th><th>Status</th></tr>';
+                
+                for (const test of testCases) {
+                    const player = players.find(p => p.name === test.name);
+                    
+                    if (!player) {
+                        log(`✗ ${test.name} NOT FOUND`, 'fail');
+                        allPassed = false;
+                        tableHtml += `<tr><td>${test.name}</td><td colspan="5" class="fail">NOT FOUND</td></tr>`;
+                        continue;
+                    }
+                    
+                    const adpMatch = Math.abs(player.adp - test.expectedADP) < 0.1;
+                    const auctionMatch = player.auctionValue === test.expectedAuction;
+                    
+                    const status = adpMatch && auctionMatch ? 'PASS' : 'FAIL';
+                    const statusClass = adpMatch && auctionMatch ? 'pass' : 'fail';
+                    
+                    tableHtml += `<tr>
+                        <td>${test.name}</td>
+                        <td class="${adpMatch ? 'pass' : 'fail'}">${player.adp?.toFixed(2) || 'N/A'}</td>
+                        <td>${test.expectedADP}</td>
+                        <td class="${auctionMatch ? 'pass' : 'fail'}">$${player.auctionValue || 'N/A'}</td>
+                        <td>$${test.expectedAuction}</td>
+                        <td class="${statusClass}">${status}</td>
+                    </tr>`;
+                    
+                    if (!adpMatch) {
+                        log(`✗ ${test.name}: ADP mismatch - got ${player.adp}, expected ${test.expectedADP}`, 'fail');
+                        allPassed = false;
+                    }
+                    if (!auctionMatch) {
+                        log(`✗ ${test.name}: Auction mismatch - got $${player.auctionValue}, expected $${test.expectedAuction}`, 'fail');
+                        allPassed = false;
+                    }
+                    if (adpMatch && auctionMatch) {
+                        log(`✓ ${test.name}: Correct ADP and auction value`, 'pass');
+                    }
+                }
+                
+                tableHtml += '</table>';
+                resultsEl.innerHTML = tableHtml;
+                
+                // Check injury status (should NOT be from adp1)
+                log('\nChecking injury status...', 'info');
+                const injuredInAdp1 = ['Justin Jefferson', 'Tyreek Hill'];
+                let injuryTestPassed = true;
+                
+                for (const name of injuredInAdp1) {
+                    const player = players.find(p => p.name === name);
+                    if (player && player.injuryStatus && player.injuryStatus !== 'Healthy') {
+                        log(`⚠ ${name} has injury status: ${player.injuryStatus}`, 'warn');
+                        log('  Verifying source is Sleeper API, not adp1...', 'info');
+                    }
+                }
+                
+                // Summary
+                log('\n' + '='.repeat(60), 'info');
+                const withESPNADP = players.filter(p => p.adp && p.adp > 0 && p.adp < 300).length;
+                const withAuction = players.filter(p => p.auctionValue && p.auctionValue > 0).length;
+                
+                log(`Summary:`, 'info');
+                log(`  Total players: ${players.length}`, 'info');
+                log(`  With ESPN ADP: ${withESPNADP}`, 'info');
+                log(`  With auction values: ${withAuction}`, 'info');
+                
+                if (allPassed) {
+                    setStatus('✓ ALL TESTS PASSED', 'pass');
+                    log('\n✓ Integration test PASSED!', 'pass');
+                } else {
+                    setStatus('✗ SOME TESTS FAILED', 'fail');
+                    log('\n✗ Integration test FAILED!', 'fail');
+                }
+                
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'fail');
+                console.error(error);
+                setStatus('Test failed with error', 'fail');
+            }
+        }
+        
+        // Run test when page loads
+        runTest();
+    </script>
+</body>
+</html>

@@ -20,6 +20,7 @@ export interface RosterRequirements {
 export interface ScoringSettings {
   passingTD: number;
   passingYards: number; // points per yard
+  passingInt: number;
   rushingTD: number;
   rushingYards: number;
   receivingTD: number;
@@ -27,6 +28,7 @@ export interface ScoringSettings {
   receptions: number; // PPR value: 0, 0.5, or 1
   interceptions: number;
   fumbles: number;
+  twoPointConversion: number;
 }
 
 export interface LeagueSettings {
@@ -62,19 +64,21 @@ export const defaultLeagueSettings: LeagueSettings = {
     K: { min: 1, max: 2 },
     DST: { min: 1, max: 2 },
     FLEX: { positions: ['RB', 'WR', 'TE'], count: 1 },
-    benchSpots: 6
+    benchSpots: 7  // CORRECTED: 7 bench spots for 16 total roster
   },
   
   scoring: {
     passingTD: 4,
     passingYards: 0.04, // 1 point per 25 yards
+    passingInt: -2,
     rushingTD: 6,
     rushingYards: 0.1,  // 1 point per 10 yards
     receivingTD: 6,
     receivingYards: 0.1,
     receptions: 1,      // Full PPR
     interceptions: -2,
-    fumbles: -2
+    fumbles: -2,
+    twoPointConversion: 2
   },
   
   isDynasty: false,

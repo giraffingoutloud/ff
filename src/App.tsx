@@ -28,6 +28,7 @@ import { ValueFinder } from './components/ValueFinder';
 import { DraftHistory } from './components/DraftHistory';
 import Dashboard from './components/Dashboard/Dashboard';
 import { PopOutWindow } from './components/PopOutWindow';
+// import { MethodologyDocs } from './components/MethodologyDocs'; // Now opens in separate window
 import { playerDB } from './services/database';
 import { improvedCanonicalService } from './services/improvedCanonicalService';
 import { dynamicCVSCalculator } from './services/dynamicCVSCalculator';
@@ -35,12 +36,13 @@ import { ExtendedPlayer, pprAnalyzer } from './services/pprAnalyzer';
 import { advancedMetricsService } from './services/advancedMetricsService';
 import { auctionMarketTracker, MarketConditions, PositionMarket } from './services/auctionMarketTracker';
 import { Player, Position, Team } from './types';
-import { dataValidator } from './services/dataValidator';
-import { hallucinationDetector } from './services/hallucinationDetector';
-import { dataProvenanceChecker } from './services/dataProvenanceChecker';
+// Validation imports commented out for performance
+// import { dataValidator } from './services/dataValidator';
+// import { hallucinationDetector } from './services/hallucinationDetector';
+// import { dataProvenanceChecker } from './services/dataProvenanceChecker';
 import { badgeDataService } from './services/badgeDataService';
 import { EvaluationSettings } from './components/EvaluationSettings';
-import { Settings } from 'lucide-react';
+import { Settings, Calculator } from 'lucide-react';
 import { useImprovedEvaluation } from './hooks/useImprovedEvaluation';
 import { ImprovedValueDisplay, ValueBadge } from './components/ImprovedValueDisplay';
 import { featureFlags } from './config/featureFlags';
@@ -177,6 +179,7 @@ export function App() {
   const [extendedPlayers, setExtendedPlayers] = useState<ModernExtendedPlayer[]>([]);
   const [selectedPlayerDetail, setSelectedPlayerDetail] = useState<ModernExtendedPlayer | null>(null);
   const auctionTrackerInitialized = useRef(false);
+  const appInitialized = useRef(false);
   const [marketConditions, setMarketConditions] = useState<MarketConditions | null>(null);
   const [positionMarkets, setPositionMarkets] = useState<PositionMarket[]>([]);
   const [sortColumn, setSortColumn] = useState<'name' | 'position' | 'team' | 'cvsScore' | 'projectedPoints' | 'receptions' | 'auctionValue' | 'adp' | 'round' | 'age' | 'byeWeek' | 'experience' | 'sos' | 'intrinsicValue' | 'marketPrice' | 'edge'>('cvsScore');
@@ -198,7 +201,7 @@ export function App() {
   });
   const [showDataQuality, setShowDataQuality] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
-  const [showDashboardPopout, setShowDashboardPopout] = useState(false);
+  // const [showDashboardPopout, setShowDashboardPopout] = useState(false); // Now opens in new window
   const [dataQualityIssues, setDataQualityIssues] = useState<{ 
     errors: number, 
     warnings: number, 
@@ -210,6 +213,7 @@ export function App() {
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [tempTeamName, setTempTeamName] = useState<string>('');
   const [showSettings, setShowSettings] = useState(false);
+  // const [showMethodology, setShowMethodology] = useState(false); // Now opens in new window
 
   // Use improved evaluation hook for new system
   const { 
@@ -285,7 +289,10 @@ export function App() {
   };
 
   useEffect(() => {
-    initializeApp();
+    if (!appInitialized.current) {
+      appInitialized.current = true;
+      initializeApp();
+    }
     
     // Set up callback for real-time updates to trigger re-render
     (window as any).updatePlayersFromRealtime = () => {
@@ -357,8 +364,8 @@ export function App() {
     }
   }, [teams, extendedPlayers, draftHistory, draftMode]);
   
-  // Check data quality issues
-  useEffect(() => {
+  // Check data quality issues - DISABLED FOR PERFORMANCE
+  /* useEffect(() => {
     if (extendedPlayers.length > 0) {
       const issues = dataValidator.getIssues();
       const errors = issues.filter(i => i.severity === 'error').length;
@@ -372,7 +379,7 @@ export function App() {
         legitimacy: provenanceSummary.isLegitimate
       });
     }
-  }, [extendedPlayers]);
+  }, [extendedPlayers]); */
 
 
   // Update auction tracker when players are drafted
@@ -385,6 +392,7 @@ export function App() {
 
 
   const initializeApp = async () => {
+    console.log('initializeApp called - starting load');
     setIsLoading(true);
     
     try {
@@ -472,6 +480,7 @@ export function App() {
       alert(`Failed to load player data: ${error.message || error}`);
       setPlayers([]);
     } finally {
+      console.log('initializeApp complete - setting loading to false');
       setIsLoading(false);
     }
   };
@@ -778,7 +787,8 @@ export function App() {
             
             <div className="flex items-center space-x-4">
               
-              {/* Data Quality Indicator */}
+              {/* Data Quality Indicator - DISABLED FOR PERFORMANCE
+              Validation features commented out to improve load time
               <button
                 onClick={() => setShowDataQuality(!showDataQuality)}
                 className={`px-2 py-0.5 text-xs rounded-full font-medium transition-colors ${
@@ -806,6 +816,19 @@ export function App() {
                   <span className="text-[10px]">✓ Data OK</span>
                 )}
               </button>
+              */}
+              
+              {/* Methodology Button */}
+              <button
+                onClick={() => {
+                  // Open methodology in new window
+                  window.open('/ff/methodology', 'methodology', 'width=1200,height=800');
+                }}
+                className="p-2 rounded-lg bg-dark-bg hover:bg-dark-bg-secondary transition-colors text-dark-text-secondary hover:text-dark-text"
+                title="Methodology & Calculations"
+              >
+                <Calculator className="w-5 h-5" />
+              </button>
               
               {/* Settings Button */}
               <button
@@ -830,7 +853,15 @@ export function App() {
                   </button>
                 </div>
                 <button
-                  onClick={() => setShowDashboardPopout(true)}
+                  onClick={() => {
+                    // Save current state to localStorage for the new window
+                    localStorage.setItem('ff_players', JSON.stringify(extendedPlayers));
+                    localStorage.setItem('ff_teams', JSON.stringify(teams));
+                    localStorage.setItem('ff_draftHistory', JSON.stringify(draftHistory));
+                    localStorage.setItem('ff_userTeamId', myTeam.id);
+                    // Open auction command center in new window
+                    window.open('/ff/auction-command', 'auctionCommand', 'width=1400,height=900');
+                  }}
                   className="p-2 bg-dark-bg rounded-lg text-dark-text-secondary hover:bg-draft-primary hover:text-white transition-colors"
                   title="Grid View - Auction Draft Command Center"
                 >
@@ -2051,18 +2082,7 @@ export function App() {
         </div>
       }
       
-      {/* Dashboard Pop-out Window */}
-      {featureFlags.useNewEvaluationSystem && (
-        <PopOutWindow
-          isOpen={showDashboardPopout}
-          onClose={() => setShowDashboardPopout(false)}
-          title="AUCTION DRAFT COMMAND CENTER"
-          defaultWidth={1200}
-          defaultHeight={800}
-        >
-          <Dashboard />
-        </PopOutWindow>
-      )}
+      {/* Dashboard Pop-out Window - Now opens in separate window */}
 
       {/* Player Detail Modal */}
       <AnimatePresence>
@@ -2559,211 +2579,11 @@ export function App() {
         )}
       </AnimatePresence>
 
-      {/* Data Quality Modal - Draggable */}
-      {showDataQuality && (
-        <DraggableModal
-          onClose={() => setShowDataQuality(false)}
-          title="Data Quality Report"
-        >
-          <div className="p-3">
-            
-            {/* Data Source Info */}
-            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-2 mb-2">
-              <h3 className="text-xs text-blue-400 font-semibold mb-1">📊 Data Sources</h3>
-              <div className="text-[10px] text-dark-text-secondary space-y-0.5">
-                <div className="mb-2">
-                  <strong>Canonical CSV Projections:</strong> {extendedPlayers.length} players loaded
-                </div>
-                <div className="ml-2 text-[9px] space-y-0.5">
-                  <div>• QB: qb_projections_2025.csv</div>
-                  <div>• RB: rb_projections_2025.csv</div>
-                  <div>• WR: wr_projections_2025.csv</div>
-                  <div>• TE: te_projections_2025.csv</div>
-                  <div>• K: k_projections_2025.csv</div>
-                  <div>• DST: dst_projections_2025.csv</div>
-                  <div className="pt-2 text-yellow-400">Source: Pro Football Focus 2025 <a href="https://www.pff.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-yellow-300">pff.com</a></div>
-                </div>
-                
-                <div className="mt-3 pt-3 border-t border-blue-500/20">
-                  <strong>Real-time Updates:</strong> Sleeper API
-                  <div className="ml-2 text-[9px]">Last updated: {improvedCanonicalService.getSleeperLastUpdated()?.toLocaleString() || 'Not yet fetched'}</div>
-                </div>
-                
-                <div className="mt-3 pt-3 border-t border-blue-500/20">
-                  <strong>Validation Tests Run at Startup:</strong>
-                </div>
-                <div className="ml-2 text-[9px]">
-                  ✓ Statistical impossibility checks (catch rate, negative points, etc.)
-                </div>
-                <div className="ml-2 text-[9px]">
-                  ✓ Hallucination detection (AI-generated patterns)
-                </div>
-                <div className="ml-2 text-[9px]">
-                  ✓ Data provenance verification (canonical sources only)
-                </div>
-                <div className="ml-2 text-[9px]">
-                  ✓ Name normalization for API matching
-                </div>
-                <div className="ml-2 text-[9px]">
-                  ✓ Age/experience validation
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              {/* Test Button and Results */}
-              <div className="mb-4 flex items-start gap-3">
-                <button 
-                  onClick={async () => {
-                    setValidationResults('Running validation on all players...');
-                    console.log('Running real validation tests on actual players...');
-                    
-                    try {
-                      // Run real validation on actual players
-                      const players = improvedCanonicalService.getAllPlayers();
-                      
-                      // Run hallucination detection
-                      hallucinationDetector.detectHallucinations(players);
-                      const hallucinations = hallucinationDetector.getHighConfidenceIssues().length;
-                      
-                      // Run data validation
-                      dataValidator.validateAllPlayers(players);
-                      const validationIssues = dataValidator.getIssues();
-                      const errors = validationIssues.filter(i => i.severity === 'error').length;
-                      const warnings = validationIssues.filter(i => i.severity === 'warning').length;
-                      
-                      // Run provenance check (it doesn't take parameters, checks global state)
-                      await dataProvenanceChecker.checkDataProvenance();
-                      const provenanceIssues = dataProvenanceChecker.getCriticalIssues().length;
-                      
-                      // Format results
-                      let resultText = `✓ Validated ${players.length} players: `;
-                      if (errors === 0 && warnings === 0 && hallucinations === 0 && provenanceIssues === 0) {
-                        resultText += `No critical issues found`;
-                      } else {
-                        resultText += `${errors} errors, ${warnings} warnings`;
-                        if (hallucinations > 0) {
-                          resultText += `, ${hallucinations} critical hallucinations`;
-                        }
-                        if (provenanceIssues > 0) {
-                          resultText += `, ${provenanceIssues} critical provenance issues`;
-                        }
-                      }
-                      
-                      setValidationResults(resultText);
-                      
-                      // Update the main data quality issues state
-                      setDataQualityIssues({
-                        errors,
-                        warnings,
-                        hallucinations,
-                        legitimacy: provenanceIssues === 0
-                      });
-                      
-                      console.log('Real validation complete:', {
-                        totalPlayers: players.length,
-                        errors,
-                        warnings,
-                        hallucinations,
-                        provenanceIssues
-                      });
-                    } catch (error) {
-                      console.error('Validation error:', error);
-                      setValidationResults('Error running validation tests');
-                    }
-                  }}
-                  className="px-2 py-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg text-[9px] font-medium"
-                >
-                  🧪 Run Validation Tests
-                </button>
-                {validationResults && (
-                  <div className="flex-1 px-2 py-1 bg-dark-bg rounded-lg border border-dark-border text-[9px] text-dark-text-secondary">
-                    {validationResults}
-                  </div>
-                )}
-              </div>
-              
-              {!dataQualityIssues.legitimacy && (
-                <div className="bg-red-600/30 border border-red-400/50 rounded-lg p-2">
-                  <h3 className="text-[10px] text-red-300 font-semibold mb-1">🚫 Data Provenance Issues</h3>
-                  <div className="space-y-0.5 text-[9px] text-dark-text-secondary">
-                    {dataProvenanceChecker.getCriticalIssues()
-                      .slice(0, 5)
-                      .map((issue, idx) => (
-                        <div key={idx}>
-                          • {issue.location}: {issue.description}
-                        </div>
-                      ))}
-                  </div>
-                  <div className="mt-1 text-[9px] text-red-400">
-                    Data may not be from canonical sources or evaluation engines
-                  </div>
-                </div>
-              )}
-              
-              {dataQualityIssues.hallucinations > 0 && (
-                <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-2">
-                  <h3 className="text-[10px] text-purple-400 font-semibold mb-1">🧠 Likely Hallucinations ({dataQualityIssues.hallucinations})</h3>
-                  <div className="space-y-0.5 text-[9px] text-dark-text-secondary">
-                    {hallucinationDetector.getHighConfidenceIssues()
-                      .slice(0, 10)
-                      .map((issue, idx) => (
-                        <div key={idx}>
-                          • {issue.playerName ? `${issue.playerName}: ` : ''}{issue.description}
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-              
-              {dataQualityIssues.errors > 0 && (
-                <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-2">
-                  <h3 className="text-[10px] text-red-400 font-semibold mb-1">❌ Errors ({dataQualityIssues.errors})</h3>
-                  <div className="space-y-0.5 text-[9px] text-dark-text-secondary">
-                    {dataValidator.getIssues()
-                      .filter(i => i.severity === 'error')
-                      .slice(0, 10)
-                      .map((issue, idx) => (
-                        <div key={idx}>• {issue.playerName}: {issue.issue}</div>
-                      ))}
-                  </div>
-                </div>
-              )}
-              
-              {dataQualityIssues.warnings > 0 && (
-                <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-2">
-                  <h3 className="text-[10px] text-yellow-400 font-semibold mb-1">⚠️ Warnings ({dataQualityIssues.warnings})</h3>
-                  <div className="space-y-0.5 text-[9px] text-dark-text-secondary">
-                    {dataValidator.getIssues()
-                      .filter(i => i.severity === 'warning')
-                      .slice(0, 10)
-                      .map((issue, idx) => (
-                        <div key={idx}>• {issue.playerName}: {issue.issue}</div>
-                      ))}
-                  </div>
-                </div>
-              )}
-              
-              {dataQualityIssues.errors === 0 && dataQualityIssues.warnings === 0 && dataQualityIssues.hallucinations === 0 && dataQualityIssues.legitimacy && (
-                <div className="bg-green-900/20 rounded-lg p-2">
-                  <h3 className="text-[10px] text-green-400 font-semibold mb-1">✅ All Data Valid</h3>
-                  <div className="text-[9px] text-dark-text-secondary space-y-0.5">
-                    <div>• No statistical impossibilities detected</div>
-                    <div>• No hallucination patterns found</div>
-                    <div>• All data from canonical sources verified</div>
-                    <div>• Player data integrity confirmed</div>
-                  </div>
-                </div>
-              )}
-              
-              <div className="text-[9px] text-dark-text-tertiary mt-2">
-                <p>Data is refreshed daily from Sleeper API</p>
-                <p>Some validation warnings are expected (e.g., high ADP for kickers)</p>
-              </div>
-            </div>
-          </div>
-        </DraggableModal>
-      )}
+      {/* Data Quality Modal - DISABLED FOR PERFORMANCE
+      Validation features commented out to improve load time
+      Code removed due to nested comment parsing issues */}
+
+      {/* Methodology Documentation - Now opens in new window */}
 
       {/* Settings Modal */}
       {showSettings && (

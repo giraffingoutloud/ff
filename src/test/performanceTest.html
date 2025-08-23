@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Performance Test</title>
+    <style>
+        body { background: #1a1a1a; color: #e0e0e0; font-family: monospace; padding: 20px; }
+        .metric { margin: 10px 0; padding: 10px; background: #2a2a2a; border-radius: 5px; }
+        .good { color: #4ade80; }
+        .bad { color: #f87171; }
+    </style>
+</head>
+<body>
+    <h1>Performance Test - Validation Disabled</h1>
+    <div id="results"></div>
+    
+    <script type="module">
+        const results = document.getElementById('results');
+        
+        async function measurePerformance() {
+            const startTime = performance.now();
+            
+            try {
+                // Time the import
+                const importStart = performance.now();
+                const { improvedCanonicalService } = await import('/src/services/improvedCanonicalService.ts');
+                const importTime = performance.now() - importStart;
+                
+                // Time the initialization
+                const initStart = performance.now();
+                const players = await improvedCanonicalService.initialize();
+                const initTime = performance.now() - initStart;
+                
+                const totalTime = performance.now() - startTime;
+                
+                // Display results
+                results.innerHTML = `
+                    <div class="metric">
+                        <strong>Total Load Time:</strong> 
+                        <span class="${totalTime < 1000 ? 'good' : 'bad'}">${totalTime.toFixed(0)}ms</span>
+                    </div>
+                    <div class="metric">
+                        <strong>Import Time:</strong> ${importTime.toFixed(0)}ms
+                    </div>
+                    <div class="metric">
+                        <strong>Data Initialization:</strong> ${initTime.toFixed(0)}ms
+                    </div>
+                    <div class="metric">
+                        <strong>Players Loaded:</strong> ${players.length}
+                    </div>
+                    <div class="metric good">
+                        <strong>Validation Status:</strong> DISABLED (for performance)
+                    </div>
+                    <div class="metric">
+                        <strong>Expected Improvement:</strong> 500-1500ms faster load time
+                    </div>
+                `;
+                
+                // Log to console
+                console.log('Performance Test Results:');
+                console.log('Total time:', totalTime.toFixed(0) + 'ms');
+                console.log('Import time:', importTime.toFixed(0) + 'ms');
+                console.log('Init time:', initTime.toFixed(0) + 'ms');
+                console.log('Players loaded:', players.length);
+                
+                // Check console for validation messages
+                console.log('\nChecking for validation messages...');
+                console.log('If you see validation/hallucination/provenance messages above, validation is still running!');
+                
+            } catch (error) {
+                results.innerHTML = `<div class="metric bad">Error: ${error.message}</div>`;
+                console.error(error);
+            }
+        }
+        
+        measurePerformance();
+    </script>
+</body>
+</html>

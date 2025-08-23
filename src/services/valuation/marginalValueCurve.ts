@@ -23,19 +23,20 @@ export class MarginalValueCurve {
   }
 
   /**
-   * Convert VORP to dollar value using position-specific curves
+   * Convert VORP to dollar value using non-linear position-specific curves
    */
   vorpToDollars(vorp: number, position: Position): number {
     if (vorp <= 0) return 0;
     
     const curve = this.getPositionCurve(position);
     
-    // LINEAR conversion to avoid double-counting scarcity
-    // Scarcity is already baked into VORP via replacement level
-    // value = base * (vorp / scale)
-    const rawValue = curve.base * (vorp / curve.scale);
+    // NON-LINEAR conversion captures exponential value of elite players
+    // value = base + (vorp/scale)^exponent * scale
+    // For exponent > 1.0, this creates increasing returns for higher VORP
+    const normalizedVorp = vorp / curve.scale;
+    const rawValue = curve.base + Math.pow(normalizedVorp, curve.exponent) * curve.scale;
     
-    // Apply position-specific adjustments
+    // Apply position-specific adjustments (lighter touch with natural curve dampening)
     const adjustedValue = this.applyPositionAdjustments(rawValue, position);
     
     return Math.max(0, adjustedValue);
@@ -43,52 +44,52 @@ export class MarginalValueCurve {
 
   /**
    * Get position-specific curve parameters
-   * These create different value distributions by position
+   * Non-linear curves capture exponential value of elite players
    */
   private getPositionCurve(position: Position): CurveParameters {
-    // LINEAR curves (no exponent) - scarcity already in VORP
+    // NON-LINEAR curves - elite players provide exponential value
     const curves: Record<Position, CurveParameters> = {
       QB: {
         base: 15,
-        exponent: 1.0,  // LINEAR - no exponential
-        scale: 100      // $15 per 100 VORP
+        exponent: 1.1,   // Slight curve - elite QBs matter but position is deep
+        scale: 100       // $15 per 100 VORP at base
       },
       RB: {
         base: 18,
-        exponent: 1.0,  // LINEAR
-        scale: 80       // $18 per 80 VORP
+        exponent: 1.25,  // Strong curve - elite RBs are league-winners
+        scale: 80        // $18 per 80 VORP at base
       },
       WR: {
-        base: 19,       // FURTHER INCREASED for higher elite values
-        exponent: 1.0,  // LINEAR
-        scale: 72       // FURTHER DECREASED for steeper slope ($19 per 72 VORP)
+        base: 19,
+        exponent: 1.15,  // Moderate curve - depth exists but elite WRs dominate
+        scale: 72        // $19 per 72 VORP at base
       },
       TE: {
         base: 14,
-        exponent: 1.0,  // LINEAR
-        scale: 60       // $14 per 60 VORP
+        exponent: 1.3,   // Steepest curve - massive tier cliff at TE
+        scale: 60        // $14 per 60 VORP at base
       },
       K: {
         base: 2,
-        exponent: 1.0,  // LINEAR
-        scale: 20       // $2 per 20 VORP
+        exponent: 1.0,   // Linear - kickers truly fungible
+        scale: 20        // $2 per 20 VORP
       },
       DST: {
         base: 3,
-        exponent: 1.0,  // LINEAR
-        scale: 25       // $3 per 25 VORP
+        exponent: 1.05,  // Nearly linear - mostly streamable
+        scale: 25        // $3 per 25 VORP at base
       }
     };
     
     // Adjust curves for league settings
     const baseCurve = curves[position];
     
-    // SuperFlex adjustment - increase QB value
+    // SuperFlex adjustment - increase QB value and curve
     if (this.leagueSettings.isSuperFlex && position === 'QB') {
       return {
         ...baseCurve,
         base: baseCurve.base * 1.4,
-        exponent: baseCurve.exponent * 1.1
+        exponent: Math.min(1.3, baseCurve.exponent * 1.15) // More curve in SF
       };
     }
     
@@ -97,7 +98,7 @@ export class MarginalValueCurve {
       return {
         ...baseCurve,
         base: baseCurve.base * 1.3,
-        exponent: baseCurve.exponent * 0.95 // Slightly flatter, more TEs valuable
+        exponent: Math.max(1.2, baseCurve.exponent * 0.92) // Slightly flatter in TEP, more TEs viable
       };
     }
     
@@ -106,32 +107,35 @@ export class MarginalValueCurve {
 
   /**
    * Apply position-specific value adjustments
-   * Uses soft caps that scale with league settings
+   * Natural curve dampening from exponents replaces arbitrary soft caps
    */
   private applyPositionAdjustments(rawValue: number, position: Position): number {
     let value = rawValue;
     
-    // Soft caps that scale with league settings
+    // Reality check based on historical auction data
     const budgetPerTeam = this.leagueSettings.budget;
     
-    // Base cap percentages of team budget
-    const baseCaps: Record<Position, number> = {
-      QB: this.leagueSettings.isSuperFlex ? 0.30 : 0.20,  // 30% SF, 20% normal
-      RB: 0.35,  // 35% of budget max
-      WR: 0.34,  // INCREASED to 34% for elite WRs
-      TE: this.leagueSettings.isTEPremium ? 0.28 : 0.22,  // 28% TEP, 22% normal
-      K: 0.015,  // 1.5% of budget
-      DST: 0.025 // 2.5% of budget
+    // Maximum realistic percentages from historical data
+    // These are safety limits for extreme outliers only
+    const maxRealistic: Record<Position, number> = {
+      QB: this.leagueSettings.isSuperFlex ? 0.40 : 0.30,  // Elite QBs: 25-30% (40% SF)
+      RB: 0.50,  // CMC has gone for 35-40% of budget, allow up to 50% for true outliers
+      WR: 0.45,  // Jefferson/Chase can approach 35-40%
+      TE: this.leagueSettings.isTEPremium ? 0.40 : 0.35,  // Kelce: 25-35%
+      K: 0.03,   // Never more than 3%
+      DST: 0.04  // Never more than 4%
     };
     
-    const softCap = budgetPerTeam * baseCaps[position];
+    const maxValue = budgetPerTeam * maxRealistic[position];
     
-    // Apply soft cap with diminishing returns rather than hard cutoff
-    if (value > softCap) {
-      // Logarithmic dampening past the cap
-      const excess = value - softCap;
-      const dampened = Math.log(1 + excess) * 5; // Diminishing returns
-      value = softCap + dampened;
+    // Only apply dampening at extreme values
+    // The non-linear curve already provides natural diminishing returns
+    if (value > maxValue) {
+      // More gradual dampening - allow values to exceed soft max significantly
+      const excess = value - maxValue;
+      const dampingFactor = 50; // Increased to allow more excess value through
+      const dampened = Math.sqrt(excess * dampingFactor); // Square root dampening instead of tanh
+      value = maxValue + dampened;
     }
     
     return Math.max(0, value);

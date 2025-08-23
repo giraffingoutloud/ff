@@ -2,7 +2,60 @@
 
 # PROJECT PURPOSE: The purpose of this tool is to assist the user in drafting the optimal fantasy team during an auction draft at the beginning of the season, and in rostering the optimal team each week during the season (currently only the former feature is implemented).
 
-To this end, it is imperative that the tool use only real, verified data from canonical_data (C:\Users\giraf\Documents\projects\ff\canonical_data) and Sleeper API, rather than estimations or guesses, in order to maximize the accuracy of this tool's recommendations. Only use Sleeper API for updates on injury status and other news. For everything else such as names, historical statistics, projections, ADP, the only source of truth is data from canonical_data.
+To this end, it is imperative that the tool use only real, verified data from canonical_data (C:\Users\giraf\Documents\projects\ff\canonical_data) and Sleeper API in order to maximize the accuracy of this tool's recommendations. Only use Sleeper API for updates on injury status and other news. For everything else such as names, historical statistics, projections, ADP, the only source of truth is data from canonical_data.
+
+ ## CRITICAL: METHOD NAME VERIFICATION PROTOCOL
+
+  ### BEFORE Writing ANY Code That Calls Methods:
+  **MANDATORY VERIFICATION SEQUENCE:**
+
+  1. **STOP** - Do not write code yet
+  2. **SEARCH** - Use Grep to find the actual class definition
+  3. **LIST** - Identify ALL available methods in that class
+  4. **VERIFY** - Confirm the exact method signature
+  5. **WRITE** - Only now write the code
+
+  ### Common Hallucination Patterns to AVOID:
+  - **WRONG**: `calculateMultipleValues()` → **CORRECT**: `calculateAllValues()`
+  - **WRONG**: `predictMultiplePrices()` → **CORRECT**: `predictMultiple()`
+  - **WRONG**: `calculateVORP()` → **DOES NOT EXIST**
+  - **WRONG**: `calculateReplacementLevel()` → **CORRECT**: `getReplacementLevel()`
+
+  ### Red Flags That Indicate Hallucination:
+  - Method name "sounds right" but hasn't been verified
+  - Assuming parallel method names (if `getX` exists, assuming `getAllX` exists)
+  - Creating "logical" method names without checking
+  - Writing code before running verification grep
+
+  ### Verification Commands to Run FIRST:
+  ```bash
+  # Find class definition and methods
+  grep -n "class ClassName" --include="*.ts" -r src/
+  grep -n "^\s*(public|private|protected)?\s*\w+.*\(.*\).*\{" filename.ts
+
+  # Find actual method usage examples
+  grep -n "methodName" --include="*.ts" -r src/
+
+  ENFORCEMENT RULE:
+
+  If you write code calling a method WITHOUT FIRST showing grep output proving that method exists, you are hallucinating. The user should reject any code that doesn't include verification proof.
+
+  Example of CORRECT Behavior:
+
+  User: "Update the intrinsic value calculation"
+  Assistant: "Let me first verify the available methods in IntrinsicValueEngine..."
+  [Shows grep output proving calculateAllValues exists]
+  "Now I can see the actual method is calculateAllValues(), not calculateMultipleValues()..."
+  [Only THEN writes code]
+
+  Example of WRONG Behavior:
+
+  User: "Update the intrinsic value calculation"
+  Assistant: "I'll update it using calculateMultipleValues()..."
+  [Writes code without verification - THIS IS HALLUCINATION]
+
+  REMEMBER: grep FIRST, code SECOND. ALWAYS.
+
 
 VERIFICATION BEFORE ASSERTION
 
@@ -91,29 +144,16 @@ VERIFICATION BEFORE ASSERTION
   ### Exception:
   Only if user says "...and do it" or "...and implement it" in the same message
 
-# NO HALLUCINATIONS ALLOWED! No fake, fabricated, synthetic, or simulated data allowed! Use of such data will decrease this tool's accuracy.
-
-  1. If data is missing, do not make anything up. Inform the user of what is missing and await further instructions.
-  2. If there is a contradiction in the user's instructions, do not make any assumptions. Inform the user and await further instructions.
-  3. If clarification is needed about anything, do not make any assumptions. Seek the user's input.
-  4. If there is a better way to do something, inform the user so that a plan can be formulated.
-  5. Do not implement anything without the user's input. 
+# NO HALLUCINATIONS ALLOWED! 
+  1. If data is missing, do not make anything up; inform the user of what is missing and await further instructions
+  2. If there is a contradiction in the user's instructions, do not make any assumptions; inform the user and await further instructions
+  3. If clarification is needed about anything, do not make any assumptions; seek the user's input
+  4. If there is a better way to do something, inform the user so that a plan can be formulated
+  5. Do not implement anything without the user's input
 
 ## IMPORTANT: Correct Project Directory
 **Always verify you are in the correct project directory**
 - **Correct Path**: `/mnt/c/Users/giraf/Documents/projects/ff/`
-
-## Active Files
-
-### Main Application
-- **Entry Point**: `src/main.tsx` → loads `App.tsx` 
-- **Main Component**: `src/App.tsx` 
-- **Recommendations**: `src/components/Recommendations.tsx` 
-
-### Running the Application
-```bash
-npm run dev  # Runs on port 5173 by default
-```
 
 ### When Making Changes
 1. Always verify which component is actually being used (check main.tsx)
@@ -121,33 +161,11 @@ npm run dev  # Runs on port 5173 by default
 3. Handle null/undefined values in display logic
 4. Use descriptive labels instead of abbreviations
 
-## Key Components
-- **App.tsx**: Main application with auction/list/grid views
-- **Recommendations.tsx**: Smart recommendations with tabs
-- **ValueFinder.tsx**: Find undervalued players based on CVS vs $ analysis
-- **TeamCommand.tsx**: Team management view
-- **PlayerCard.tsx**: Player detail card component
-
-## Build Commands
-```bash
-npm run typecheck  # Check for TypeScript errors
-npm run build      # Production build
-npm run dev        # Development server
-```
-
-## Drafting Issues & Solutions
-### Team Budget Not Updating Fix (2025-08-21)
-- **Issue**: When drafting players to teams other than "My Team", the Team Budgets panel doesn't update
-- **Solution**: Use the store's `draftPlayer` action instead of manually updating state with `setState`
-- **File**: `src/App.tsx` - confirmDraft function should call `await draftPlayer()`
-
-Last Updated: 2025-08-22
-
 ## CRITICAL: Comment Policy for AI Assistants, Large Language Models
 
 **DO NOT ADD COMMENTS TO THE CODE**
 
-This codebase intentionally has NO comments to avoid outdated documentation issues.
+This codebase intentionally minimizes comments to avoid outdated documentation issues.
 
 ### Why No Comments?
 - Comments often become outdated when code changes
@@ -243,39 +261,6 @@ Canonical: "D'Andre Swift" ↔ Sleeper: "Dandre Swift"
 // This already works! Don't change it.
 ```
 
-### Handling Inconsistencies WITHIN Canonical Data in canonical_data
-
-#### If Canonical Data Itself Is Inconsistent:
-**Use the FIRST occurrence as the standard**
-
-#### Priority Order for Canonical Files:
-1. `projections/*.csv` - Primary source
-2. `adp/adp0_2025.csv` - Secondary source  
-3. `rankings/*.csv` - Tertiary source
-4. Other files - Last resort
-
-#### Example Resolution:
-```javascript
-// If projections has "A.J. Brown" but ADP has "AJ Brown":
-// USE "A.J. Brown" because projections is higher priority
-
-// Implementation:
-1. Load projections FIRST - establish name format
-2. When loading ADP, map "AJ Brown" → "A.J. Brown"
-3. Store as "A.J. Brown" everywhere
-```
-
-#### Deduplication Strategy:
-- Load files in priority order
-- First occurrence of a player sets their canonical name
-- All subsequent occurrences map to that first name
-- Use NameNormalizer to detect duplicates
-
-#### Warning Signs of Inconsistency:
-- Same player appears twice in player list
-- Stats don't match between files for same player
-- Team totals don't add up correctly
-
 ## Code Modification Rules
 
 ### File Management:
@@ -303,31 +288,3 @@ Canonical: "D'Andre Swift" ↔ Sleeper: "Dandre Swift"
 - NEVER push to remote unless user explicitly asks
 - NEVER modify git history (rebase, force push)
 - ALWAYS show what will be committed before committing
-
-## Project Structure Reference
-
-### Active Components:
-- Main app: `src/App.tsx`
-- Data service: `src/services/canonicalService.ts`
-- State management: `src/store/draftStore.ts`
-- Recommendations: `src/components/Recommendations.tsx`
-
-### Data Flow:
-1. CSV files loaded from `canonical_data/`
-2. Sleeper API enriches with real-time updates
-3. Data stored in memory (no database)
-4. UI components consume via hooks
-
-## UI/UX Standards
-
-### Design Rules:
-- Dark mode is the ONLY mode (no light theme)
-- Use Tailwind classes, not inline styles
-- Follow position color scheme (position-qb, position-rb, etc.)
-- Maintain mobile responsiveness
-
-### User Communication:
-- Be are thorough as possible in your communication with the user
-- Show changes rather than explaining
-- Ask for clarification if ambiguous
-- Warn before breaking changes

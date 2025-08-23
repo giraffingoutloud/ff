@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Browser Console Test</title>
+    <style>
+        body { background: #1a1a1a; color: #e0e0e0; font-family: monospace; padding: 20px; }
+        pre { background: #0a0a0a; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .pass { color: #4ade80; }
+        .fail { color: #f87171; }
+    </style>
+</head>
+<body>
+    <h1>Dual ADP Browser Test</h1>
+    <p>Open browser console to see detailed output</p>
+    <pre id="output">Loading...</pre>
+    
+    <script type="module">
+        const output = document.getElementById('output');
+        
+        async function test() {
+            try {
+                const { improvedCanonicalService } = await import('/src/services/improvedCanonicalService.ts');
+                const { verifyValuationSystem } = await import('/src/test/finalVerification.ts');
+                
+                console.log('Starting test...');
+                output.textContent = 'Loading players...\n';
+                
+                const players = await improvedCanonicalService.initialize();
+                
+                // Test specific players
+                const tests = [
+                    { name: "Ja'Marr Chase", espnADP: 1.56, auction: 59 },
+                    { name: "Bijan Robinson", espnADP: 3.08, auction: 57 },
+                    { name: "Justin Jefferson", espnADP: 4.76, auction: 56 }
+                ];
+                
+                let results = 'TEST RESULTS:\n' + '='.repeat(50) + '\n\n';
+                let allPass = true;
+                
+                for (const test of tests) {
+                    const player = players.find(p => p.name === test.name);
+                    if (!player) {
+                        results += `❌ ${test.name}: NOT FOUND\n`;
+                        allPass = false;
+                        continue;
+                    }
+                    
+                    const adpOk = Math.abs(player.adp - test.espnADP) < 0.1;
+                    const auctionOk = player.auctionValue === test.auction;
+                    
+                    if (adpOk && auctionOk) {
+                        results += `✅ ${test.name}: ADP=${player.adp.toFixed(2)}, Auction=$${player.auctionValue}\n`;
+                        console.log(`✅ ${test.name} PASS`, player);
+                    } else {
+                        results += `❌ ${test.name}: `;
+                        if (!adpOk) results += `ADP=${player.adp} (expected ${test.espnADP}) `;
+                        if (!auctionOk) results += `Auction=$${player.auctionValue} (expected $${test.auction})`;
+                        results += '\n';
+                        console.error(`❌ ${test.name} FAIL`, player);
+                        allPass = false;
+                    }
+                }
+                
+                results += '\n' + '='.repeat(50) + '\n';
+                results += allPass ? '✅ ALL TESTS PASSED!' : '❌ SOME TESTS FAILED!';
+                
+                output.textContent = results;
+                output.className = allPass ? 'pass' : 'fail';
+                
+                // Run full verification in console
+                console.log('\nRunning full valuation verification...');
+                await verifyValuationSystem();
+                
+            } catch (error) {
+                output.textContent = 'ERROR: ' + error.message;
+                output.className = 'fail';
+                console.error(error);
+            }
+        }
+        
+        test();
+    </script>
+</body>
+</html>

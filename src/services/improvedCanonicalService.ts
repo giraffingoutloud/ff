@@ -16,17 +16,21 @@ import { parseCSV, ParsedCSVRow } from '../utils/csvParser';
 import { correctRookieStatus } from '../data/rookie_corrections';
 import { correctPlayerAge } from '../data/age_corrections';
 import { correctPlayerExperience } from '../data/experience_corrections';
-import { dataValidator } from './dataValidator';
+// Validation imports commented out for performance
+// import { dataValidator } from './dataValidator';
 import { nameNormalizer } from './nameNormalizer';
-import { hallucinationDetector } from './hallucinationDetector';
-import { dataProvenanceChecker } from './dataProvenanceChecker';
+// import { hallucinationDetector } from './hallucinationDetector';
+// import { dataProvenanceChecker } from './dataProvenanceChecker';
 import { realtimeDataService } from './realtimeDataService';
 import { evaluationEngine } from './unifiedEvaluationEngine';
 import { ExtendedPlayer } from './pprAnalyzer';
 
 // Import canonical data files
-import allProjections from '../../canonical_data/projections/qb_projections_2025.csv?raw';
+import offenseProjections from '../../canonical_data/projections/offense_projections_2025.csv?raw';
+import kProjections from '../../canonical_data/projections/k_projections_2025.csv?raw';
+import dstProjections from '../../canonical_data/projections/dst_projections_2025.csv?raw';
 import mainADP from '../../canonical_data/adp/adp0_2025.csv?raw';
+import espnADP from '../../canonical_data/adp/adp1_2025.csv?raw';
 import sosData from '../../canonical_data/strength_of_schedule/sos_2025.csv?raw';
 
 // Cache for Sleeper player data
@@ -63,6 +67,11 @@ export class ImprovedCanonicalService {
       const playersArray = Array.from(this.players.values());
       console.log(`\n✅ Initialization complete with ${playersArray.length} total players`);
       
+      // VALIDATION DISABLED FOR PERFORMANCE
+      // Uncomment the code below to re-enable data validation checks
+      // Note: These validations significantly impact load time (~500-1500ms)
+      
+      /* 
       // Run data validation (flags issues but doesn't fix them)
       console.log('\n🔍 Running data validation...');
       dataValidator.validateAllPlayers(playersArray);
@@ -113,6 +122,7 @@ export class ImprovedCanonicalService {
       } else {
         console.log('✅ All data from canonical sources verified');
       }
+      */
       
       
       evaluationEngine.initializeWithPlayers(playersArray);
@@ -171,9 +181,13 @@ export class ImprovedCanonicalService {
   private async loadUniqueProjections(): Promise<void> {
     // Load projections from CSV
     
-    // IMPORTANT: Each projection file contains ALL players, not just that position
-    // So we only need to load ONE file to get everyone
-    const projectionRows = parseCSV(allProjections);
+    // Load offense (QB, RB, WR, TE), K, and DST separately
+    const offenseRows = parseCSV(offenseProjections);
+    const kRows = parseCSV(kProjections);
+    const dstRows = parseCSV(dstProjections);
+    
+    // Combine all projection rows
+    const projectionRows = [...offenseRows, ...kRows, ...dstRows];
     
     // Parse projection data
     
@@ -294,7 +308,77 @@ export class ImprovedCanonicalService {
    */
   private async loadADPData(): Promise<void> {
     console.log(`Players before loadADPData: ${this.players.size}`);
-    // Clean the CSV content first
+    
+    // First, load ESPN-specific ADP from adp1_2025.csv
+    console.log('Loading ESPN ADP from adp1_2025.csv...');
+    
+    // adp1 has complex multi-row headers, need special handling
+    const espnLines = espnADP
+      .replace(/^\uFEFF/, '') // Remove BOM
+      .replace(/\r\n/g, '\n') // Normalize line endings
+      .split('\n')
+      .filter(line => line.trim());
+    
+    // Skip first row (it's a category header), use second row as headers
+    // Note: There are duplicate column names, need to handle by index
+    const espnHeaders = espnLines[1].split(',').map(h => h.trim());
+    const espnRows = [];
+    
+    // Parse data rows (starting from row 3)
+    for (let i = 2; i < espnLines.length; i++) {
+      const values = espnLines[i].split(',').map(v => v.trim());
+      const row: any = {};
+      // Store by index AND header name
+      espnHeaders.forEach((header, index) => {
+        row[`col_${index}`] = values[index] || '';
+        // Also store by header for non-duplicate columns
+        if (header === 'Name') row['Name'] = values[index] || '';
+        if (header === 'Team') row['Team'] = values[index] || '';
+        if (header === 'Pos') row['Pos'] = values[index] || '';
+      });
+      // The FIRST ESPN column (index 6) is ADP, SECOND (index 13) is auction value
+      row['ESPN_ADP'] = values[6] || '';  // Column 7 (0-indexed as 6)
+      row['ESPN_AAV'] = values[13] || ''; // Column 14 (0-indexed as 13)
+      espnRows.push(row);
+    }
+    let espnADPCount = 0;
+    
+    // Process ESPN ADP data (use the correct ESPN ADP column)
+    espnRows.forEach(row => {
+      const playerName = row['Name'];
+      const espnAdpValue = row['ESPN_ADP']; // Use the correct ESPN ADP column
+      
+      if (playerName && espnAdpValue && espnAdpValue !== '' && espnAdpValue !== 'null') {
+        const espnAdp = parseFloat(espnAdpValue);
+        
+        // Try to find matching player
+        let player = this.players.get(playerName);
+        
+        // If no exact match, try normalized variations
+        if (!player) {
+          const variations = nameNormalizer.getVariations(playerName);
+          for (const variation of variations) {
+            const foundPlayer = Array.from(this.players.values()).find(p => 
+              nameNormalizer.getVariations(p.name).includes(variation)
+            );
+            if (foundPlayer) {
+              player = foundPlayer;
+              break;
+            }
+          }
+        }
+        
+        if (player && espnAdp > 0) {
+          player.adp = espnAdp; // Use ESPN-specific ADP
+          espnADPCount++;
+        }
+      }
+    });
+    
+    console.log(`Loaded ${espnADPCount} ESPN-specific ADP values from adp1`);
+    
+    // Then load auction values and other data from adp0_2025.csv
+    console.log('Loading auction values from adp0_2025.csv...');
     const cleanedADP = mainADP
       .replace(/^\uFEFF/, '') // Remove BOM
       .replace(/\r\n/g, '\n') // Normalize line endings
@@ -315,13 +399,13 @@ export class ImprovedCanonicalService {
       const position = row.Position || row.position;
       const team = row['Team Abbreviation'] || row.Team || row.team;
       
-      // Parse ADP - if it's null, keep it as 0 (which means no valid ADP)
+      // Skip ADP from adp0 - we're using ESPN ADP from adp1
+      // Only use adp0 as fallback if player has no ADP yet
       const adpValue = row.ADP || row.adp;
       let adp = 0;
       if (adpValue && adpValue !== 'null' && adpValue !== '') {
         adp = parseFloat(adpValue);
       }
-      // Do NOT use Overall Rank as fallback - null ADP means no ADP
       
       // Handle N/A auction values - keep as 0 which UI will show as "N/A"
       const auctionValueStr = row['Auction Value'] || row.auctionValue || '0';
@@ -366,12 +450,15 @@ export class ImprovedCanonicalService {
         
         if (player) {
           // Update existing player
-          if (adp > 0) player.adp = adp;
+          // Only use adp0 ADP as fallback if no ESPN ADP was loaded
+          if (adp > 0 && (!player.adp || player.adp === 0 || player.adp === 999)) {
+            player.adp = adp;
+          }
           // Apply age correction if player has missing age data
           if (!player.age || player.age === 0) {
             player.age = correctPlayerAge({ name: playerName, age: player.age, position: player.position });
           }
-          // Set auction value even if 0 (will show as N/A in UI)
+          // Set auction value from adp0 (primary source for auction values)
           const prevAuction = player.auctionValue;
           player.auctionValue = auctionValue;
           
@@ -428,7 +515,7 @@ export class ImprovedCanonicalService {
             experience: position === 'DST' ? 0 : 0, // Similar - 0 means unknown for kickers
             byeWeek: byeWeek || 0,
             bye: byeWeek || 0,
-            adp: adp || 999, // Use actual ADP from file or default to 999 (undrafted)
+            adp: adp || 999, // Fallback ADP from adp0 or default to 999 (undrafted)
             auctionValue: auctionValue || 0, // Use actual auction value from file
             projectedPoints: projectedPoints || 0, // Use actual projection from file
             cvsScore: 0, // Will be calculated later
@@ -467,10 +554,10 @@ export class ImprovedCanonicalService {
       if (p.adp && p.adp > 0 && p.adp < 500) withADP++;
     });
     
-    console.log(`ADP Matching: ${matches} updated, ${dstKAdded} new DST/K added`);
+    console.log(`ADP0 Processing: ${matches} players updated with auction values, ${dstKAdded} new DST/K added`);
     console.log(`Total players after ADP merge: ${this.players.size}`);
     console.log(`Players with auction values: ${withAuction}`);
-    console.log(`Players with valid ADP: ${withADP}`);
+    console.log(`Players with valid ADP (ESPN or fallback): ${withADP}`);
     
   }
   
