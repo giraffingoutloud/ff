@@ -2,6 +2,7 @@ import React from 'react';
 import { Clock, User, Undo, Check } from 'lucide-react';
 import { useDraftStore } from '../store/draftStore';
 import { format } from 'date-fns';
+import { Tooltip } from './Tooltip';
 
 export const DraftHistory: React.FC = () => {
   const { draftHistory, undoDraft } = useDraftStore();
@@ -31,14 +32,14 @@ export const DraftHistory: React.FC = () => {
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center mb-2">
-        <h3 className="text-sm font-semibold text-dark-text flex items-center gap-1">
-          <Check className="w-3 h-3 text-white" />
+        <h3 className="text-2xl font-bold text-dark-text flex items-center">
           Recent Picks
+          <Tooltip content="Shows the last 5 players drafted in your league with their purchase price and team. Use the Undo button to reverse accidental entries. Helps track market momentum and recent spending patterns." />
         </h3>
         {draftHistory.length > 0 && (
           <button
             onClick={undoDraft}
-            className="flex items-center space-x-1 text-xs text-dark-text-secondary hover:text-dark-primary transition-colors"
+            className="flex items-center space-x-1 text-xs xl:text-sm text-dark-text-secondary hover:text-dark-primary transition-colors"
           >
             <Undo className="w-3 h-3" />
             <span>Undo</span>
@@ -54,23 +55,23 @@ export const DraftHistory: React.FC = () => {
           >
             <div className="flex items-start justify-between">
               <div className="flex items-start space-x-2">
-                <span className="text-xs font-bold text-dark-text-tertiary">
+                <span className="text-xs xl:text-sm font-bold text-dark-text-tertiary">
                   #{player.draftPosition}
                 </span>
                 <div>
                   <div className="flex items-center space-x-1 mb-1">
-                    <span className={`px-1 py-0.5 rounded text-xs font-semibold ${getPositionColor(player.position)}`}>
+                    <span className={`px-1 py-0.5 rounded text-xs xl:text-sm font-semibold ${getPositionColor(player.position)}`}>
                       {player.position}
                     </span>
-                    <p className="text-xs font-semibold text-dark-text">{player.name}</p>
+                    <p className="text-xs xl:text-sm font-semibold text-dark-text">{player.name}</p>
                   </div>
-                  <div className="flex items-center space-x-2 text-xs text-dark-text-secondary">
+                  <div className="flex items-center space-x-2 text-xs xl:text-sm text-dark-text-secondary">
                     <span className="flex items-center">
-                      <User className="w-2 h-2 mr-1" />
+                      <User className="w-3 h-3 mr-1" />
                       {player.purchasedBy === 'my-team' ? 'My Team' : player.purchasedBy.replace('team-', 'Team ')}
                     </span>
                     <span className="flex items-center">
-                      <Clock className="w-2 h-2 mr-1" />
+                      <Clock className="w-3 h-3 mr-1" />
                       {format(new Date(player.timestamp), 'h:mm a')}
                     </span>
                   </div>
@@ -78,8 +79,7 @@ export const DraftHistory: React.FC = () => {
               </div>
               
               <div className="text-right">
-                <p className="text-sm font-bold text-dark-primary">${player.purchasePrice}</p>
-                <p className="text-[10px] text-dark-text-tertiary">CVS: {player.cvsScore}</p>
+                <p className="text-sm xl:text-base font-bold text-dark-primary">${player.purchasePrice}</p>
               </div>
             </div>
           </div>

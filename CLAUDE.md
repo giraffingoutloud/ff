@@ -163,7 +163,7 @@ VERIFICATION BEFORE ASSERTION
 
 ## CRITICAL: Comment Policy for AI Assistants, Large Language Models
 
-**DO NOT ADD COMMENTS TO THE CODE**
+**DO NOT ADD COMMENTS TO THE CODE UNLESS TOLD TO DO SO**
 
 This codebase intentionally minimizes comments to avoid outdated documentation issues.
 
@@ -177,6 +177,7 @@ This codebase intentionally minimizes comments to avoid outdated documentation i
 - Complex mathematical formulas that aren't obvious
 - External API quirks or workarounds
 - Legal/compliance requirements
+- If the user explicitly asks you to make a comment
 
 ### Instead of Comments:
 - Use descriptive variable/function names

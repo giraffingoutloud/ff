@@ -26,7 +26,7 @@ import { ValueFinder } from './components/ValueFinder';
 import { DraftHistory } from './components/DraftHistory';
 import Dashboard from './components/Dashboard/Dashboard';
 import { PopOutWindow } from './components/PopOutWindow';
-import { MethodologyDocs } from './components/MethodologyDocs';
+// import { MethodologyDocs } from './components/MethodologyDocs'; // Now opens in separate window
 import { playerDB } from './services/database';
 import { improvedCanonicalService } from './services/improvedCanonicalService';
 import { dynamicCVSCalculator } from './services/dynamicCVSCalculator';
@@ -44,16 +44,10 @@ import { Settings, Calculator } from 'lucide-react';
 import { useUnifiedValuation } from './hooks/useUnifiedValuation';
 import { ImprovedValueDisplay, ValueBadge } from './components/ImprovedValueDisplay';
 import { featureFlags } from './config/featureFlags';
-import { safeToFixed, safeRound } from './utils/safeNumber';
 import { CriticalMoments } from './components/Dashboard/CriticalMoments';
 import { DashboardDataService } from './services/dashboard/dashboardDataService';
 import { defaultLeagueSettings } from './services/valuation/leagueSettings';
 import './utils/findPlayer';
-import { useDebounce } from './hooks/useDebounce';
-import { optimizedFilterService } from './services/optimizedFilterService';
-import { PriorityNeeds } from './components/PriorityNeeds';
-import { DualScrollTable } from './components/DualScrollTable';
-import { VirtualTable } from './components/VirtualTable';
 
 type ViewMode = 'grid' | 'list';
 type DraftMode = 'snake' | 'auction';
@@ -65,12 +59,12 @@ interface ModernExtendedPlayer extends ExtendedPlayer {
   auctionValue?: number;
 }
 
-// Draggable Modal Component - Memoized for performance
-const DraggableModal = React.memo<{
+// Draggable Modal Component
+const DraggableModal: React.FC<{
   children: React.ReactNode;
   onClose: () => void;
   title: string;
-}>(({ children, onClose, title }) => {
+}> = ({ children, onClose, title }) => {
   const [position, setPosition] = useState({ x: window.innerWidth / 2 - (title === 'My Team' ? 350 : title === 'Data Quality Report' ? 175 : title === 'Draft Player' ? 350 : title === 'Player Comparison' ? 450 : 250), y: 50 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -156,9 +150,7 @@ const DraggableModal = React.memo<{
       </motion.div>
     </motion.div>
   );
-});
-
-DraggableModal.displayName = 'DraggableModal';
+};
 
 export function App() {
   const {
@@ -181,11 +173,10 @@ export function App() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [loadingStage, setLoadingStage] = useState('Initializing...');
-  const [loadingProgress, setLoadingProgress] = useState(15);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [draftMode, setDraftMode] = useState<DraftMode>('auction');
   const [searchQuery, setSearchQuery] = useState('');
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedPositions, setSelectedPositions] = useState<Set<Position>>(new Set());
   const [showOnlyAvailable, setShowOnlyAvailable] = useState(true);
   const [tableViewMode, setTableViewMode] = useState<'ALL' | 'BUYS' | 'TRAPS'>('ALL');
@@ -197,7 +188,7 @@ export function App() {
   const [positionMarkets, setPositionMarkets] = useState<PositionMarket[]>([]);
   const [sortColumn, setSortColumn] = useState<'name' | 'position' | 'team' | 'cvsScore' | 'projectedPoints' | 'receptions' | 'auctionValue' | 'adp' | 'byeWeek' | 'sos' | 'intrinsicValue' | 'marketPrice' | 'edge'>('edge');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [displayCount, setDisplayCount] = useState(30); // Reduced initial load for better performance
+  const [displayCount, setDisplayCount] = useState(75);
   const [selectedForComparison, setSelectedForComparison] = useState<Set<string>>(new Set());
   const [showComparisonModal, setShowComparisonModal] = useState(false);
   const [selectedBadges, setSelectedBadges] = useState<Set<string>>(new Set());
@@ -226,7 +217,7 @@ export function App() {
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [tempTeamName, setTempTeamName] = useState<string>('');
   const [showSettings, setShowSettings] = useState(false);
-  const [showMethodology, setShowMethodology] = useState(false);
+  // const [showMethodology, setShowMethodology] = useState(false); // Now opens in new window
 
   // Use unified valuation hook for consistency
   const { 
@@ -440,8 +431,7 @@ export function App() {
     try {
       
       // Initialize draft settings and create teams
-      await new Promise(resolve => setTimeout(resolve, 200));
-      setLoadingProgress(25);
+      setLoadingProgress(10);
       initializeDraft({
         leagueSize: 12,
         budget: 200,
@@ -454,8 +444,7 @@ export function App() {
       let loadedPlayers: Player[] = [];
       
       setLoadingStage('Loading player database...');
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setLoadingProgress(45);
+      setLoadingProgress(20);
       try {
         loadedPlayers = await playerDB.getAll();
       } catch (dbError) {
@@ -466,8 +455,7 @@ export function App() {
       if (loadedPlayers.length === 0) {
         // Force fresh load
         setLoadingStage('Loading player data from CSV files...');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        setLoadingProgress(60);
+        setLoadingProgress(30);
         improvedCanonicalService.reset();
         loadedPlayers = await improvedCanonicalService.initialize();
         
@@ -477,8 +465,7 @@ export function App() {
       } else {
         // Still initialize canonical service for real-time updates
         setLoadingStage('Checking for player updates...');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        setLoadingProgress(60);
+        setLoadingProgress(30);
         improvedCanonicalService.initialize().catch(err => 
           console.warn('Failed to initialize canonical service:', err)
         );
@@ -486,8 +473,7 @@ export function App() {
       
       // Calculate CVS scores
       setLoadingStage('Calculating player values...');
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setLoadingProgress(75);
+      setLoadingProgress(40);
       loadedPlayers = dynamicCVSCalculator.calculateBulkCVS(loadedPlayers);
       
       // Extend players with PPR and advanced metrics
@@ -519,9 +505,9 @@ export function App() {
         extended.push(...extendedChunk);
         
         // Update loading progress
-        const progress = 75 + Math.round(((i + chunkSize) / loadedPlayers.length) * 20);
-        setLoadingStage(`Analyzing players... ${Math.min(Math.round(((i + chunkSize) / loadedPlayers.length) * 100), 100)}%`);
-        setLoadingProgress(Math.min(progress, 95));
+        const progress = Math.round(((i + chunkSize) / loadedPlayers.length) * 100);
+        setLoadingStage(`Analyzing players... ${Math.min(progress, 100)}%`);
+        setLoadingProgress(Math.min(progress, 100));
       }
       
       // Store in window for debugging
@@ -550,10 +536,6 @@ export function App() {
       setLoadingStage('Finalizing...');
       setPlayers(extended);
       console.log('Set players in store:', extended.length);
-      
-      // Final progress
-      setLoadingProgress(100);
-      await new Promise(resolve => setTimeout(resolve, 400));
       
       // Set loading to false before valuations start
       setIsLoading(false);
@@ -628,9 +610,6 @@ export function App() {
         // Force update market conditions and position markets to trigger re-render
         setMarketConditions(auctionMarketTracker.getMarketConditions());
         setPositionMarkets(auctionMarketTracker.getPositionMarkets());
-        
-        // Clear badge cache when draft state changes
-        optimizedFilterService.clearCache();
       }
     }
     
@@ -700,7 +679,7 @@ export function App() {
     }
   };
 
-  // Filter players based on search and filters - OPTIMIZED VERSION
+  // Filter players based on search and filters
   const filteredPlayers = useMemo(() => {
     // Debug: Count recommendations
     if (tableViewMode !== 'ALL') {
@@ -714,16 +693,50 @@ export function App() {
       console.log('[Filter Debug] Table view mode:', tableViewMode);
     }
     
-    // Use optimized filter service with debounced search
-    return optimizedFilterService.filterPlayers(extendedPlayers, {
-      searchQuery: debouncedSearchQuery, // Using debounced value
-      selectedPositions,
-      showOnlyAvailable,
-      selectedBadges,
-      tableViewMode,
-      improvedEvaluations
-    });
-  }, [extendedPlayers, debouncedSearchQuery, selectedPositions, showOnlyAvailable, selectedBadges, tableViewMode, improvedEvaluations]);
+    return extendedPlayers.filter(player => {
+    const matchesSearch = searchQuery === '' || 
+      player.name.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Use selectedPositions if any are selected, otherwise show all
+    const matchesPosition = selectedPositions.size === 0 || selectedPositions.has(player.position);
+    
+    // Fixed availability check
+    const isAvailable = showOnlyAvailable ? !player.isDrafted : true;
+    
+    // Badge filter - if badges are selected, player must have at least one
+    let matchesBadge = true;
+    if (selectedBadges.size > 0) {
+      matchesBadge = false;
+      for (const badge of selectedBadges) {
+        if (playerHasBadge(player, badge)) {
+          matchesBadge = true;
+          break;
+        }
+      }
+    }
+    
+    // View mode filter (BUYS/TRAPS/ALL) - More strict criteria for useful filtering
+    let matchesViewMode = true;
+    if (tableViewMode !== 'ALL') {
+      const playerEval = improvedEvaluations.find(e => e.id === player.id);
+      if (!playerEval) {
+        matchesViewMode = false;
+      } else if (tableViewMode === 'BUYS') {
+        // STRICTER: Only show strong-buy recommendations OR high edge with good confidence
+        // This will filter to only the BEST value opportunities
+        matchesViewMode = playerEval.valueRecommendation === 'strong-buy' || 
+                         (playerEval.edge && playerEval.edge > 10 && playerEval.edgePercent && playerEval.edgePercent > 15);
+      } else if (tableViewMode === 'TRAPS') {
+        // STRICTER: Only show strong-avoid recommendations OR significant negative edge
+        // This will filter to only the WORST overpriced players
+        matchesViewMode = playerEval.valueRecommendation === 'strong-avoid' || 
+                         (playerEval.edge && playerEval.edge < -5 && playerEval.edgePercent && playerEval.edgePercent < -10);
+      }
+    }
+    
+    return matchesSearch && matchesPosition && isAvailable && matchesBadge && matchesViewMode;
+  });
+  }, [extendedPlayers, searchQuery, selectedPositions, showOnlyAvailable, selectedBadges, tableViewMode, improvedEvaluations]);
 
   // Get available players only
   const availablePlayers = extendedPlayers.filter(p => !p.isDrafted);
@@ -738,7 +751,7 @@ export function App() {
     let aVal: any;
     let bVal: any;
     
-    // Special handling for new evaluation columns - Using Map for O(1) lookups
+    // Special handling for new evaluation columns
     if (sortColumn === 'intrinsicValue' || sortColumn === 'marketPrice' || sortColumn === 'edge' || 
         sortColumn === 'edgePercent' || sortColumn === 'confidence' || sortColumn === 'cwe') {
       const aEval = improvedEvaluations.find(e => e.id === a.id);
@@ -803,21 +816,13 @@ export function App() {
   const handleDraftPlayer = async (player: ModernExtendedPlayer, teamId?: string, price?: number) => {
     // If price is provided (from AuctionWarRoom), draft directly
     if (price !== undefined) {
-      // IMMEDIATELY update UI for instant feedback
+      // Optimistically update UI immediately for better responsiveness
       setExtendedPlayers(prev => prev.map(p => 
         p.id === player.id ? { ...p, isDrafted: true, purchasePrice: price } : p
       ));
       
-      // Force immediate re-render by clearing filters if player was visible
-      if (filteredPlayers.some(p => p.id === player.id)) {
-        // This will instantly remove the player from view
-        setShowOnlyAvailable(true);
-      }
-      
-      // Update store in background (non-blocking)
-      setTimeout(() => {
-        draftPlayer(player.id, teamId || 'my-team', price);
-      }, 0);
+      // Then update the store (which will trigger recalculation after debounce)
+      await draftPlayer(player.id, teamId || 'my-team', price);
     } else {
       // Show price input modal
       setDraftPriceModal({
@@ -835,30 +840,27 @@ export function App() {
     const { player, selectedTeamId, price } = draftPriceModal;
       
       try {
-        // Close modal IMMEDIATELY
+        // Close modal immediately for better responsiveness
         setDraftPriceModal({ player: null, show: false, price: 0, selectedTeamId: 'my-team' });
         
-        // Update UI IMMEDIATELY for instant feedback
-        setExtendedPlayers(prev => prev.map(p => 
-          p.id === player.id ? { ...p, isDrafted: true, purchasePrice: price } : p
-        ));
-        
-        // Force immediate re-render if showing available only
-        if (showOnlyAvailable) {
-          // This triggers instant visual update
-          setShowOnlyAvailable(true);
-        }
-        
-        // Update store and tracker in background (non-blocking)
-        setTimeout(async () => {
-          await draftPlayer(player.id, selectedTeamId, price);
-          
-          // Update auction market tracker if needed
-          if (draftMode === 'auction') {
-            const draftedPlayer = { ...player, purchasePrice: price } as any;
-            auctionMarketTracker.recordDraft(draftedPlayer, selectedTeamId, price);
+        // Optimistically update UI immediately
+        setExtendedPlayers(prev => {
+          const newPlayers = [...prev];
+          const index = newPlayers.findIndex(p => p.id === player.id);
+          if (index !== -1) {
+            newPlayers[index] = { ...newPlayers[index], isDrafted: true, purchasePrice: price };
           }
-        }, 0);
+          return newPlayers;
+        });
+        
+        // Then update the store (which will trigger recalculation after debounce)
+        await draftPlayer(player.id, selectedTeamId, price);
+        
+        // Update auction market tracker if needed
+        if (draftMode === 'auction') {
+          const draftedPlayer = { ...player, purchasePrice: price } as any;
+          auctionMarketTracker.recordDraft(draftedPlayer, selectedTeamId, price);
+        }
       } catch (error) {
         console.error('Error drafting player:', error);
         alert('Failed to draft player. Check console for details.');
@@ -873,13 +875,12 @@ export function App() {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-draft-primary mx-auto"></div>
-          <p className="mt-4 text-dark-text text-2xl font-bold">Loading optimizer...</p>
-          <br />
-          <p className="mt-2 text-dark-text-secondary text-base">{loadingStage}</p>
-          <div className="mt-6 w-96 bg-dark-bg-secondary rounded-full h-4 mx-auto overflow-hidden">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-draft-primary mx-auto"></div>
+          <p className="mt-4 text-dark-text text-lg font-bold">Loading optimizer...</p>
+          <p className="mt-2 text-dark-text-secondary text-sm">{loadingStage}</p>
+          <div className="mt-4 w-64 bg-dark-bg-secondary rounded-full h-2 mx-auto overflow-hidden">
             <div 
-              className="bg-draft-primary h-full rounded-full transition-all duration-500 ease-out"
+              className="bg-draft-primary h-full rounded-full transition-all duration-300"
               style={{ width: `${loadingProgress || 10}%` }}
             ></div>
           </div>
@@ -895,7 +896,8 @@ export function App() {
       <header className="bg-gradient-to-r from-gray-800 to-gray-700 border-b border-gray-600 sticky top-0 z-50">
         <div className="w-full px-6 xl:px-10 py-3 xl:py-5">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 xl:gap-4">
+            <div className="flex items-center space-x-3">
+              <Trophy className="w-5 h-5 xl:w-7 xl:h-7 text-yellow-500" />
               <h1 className="text-lg xl:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent uppercase whitespace-nowrap">
                 Fantasy Auction Draft Optimizer
               </h1>
@@ -905,9 +907,7 @@ export function App() {
             <div className="flex flex-wrap items-center gap-3 xl:gap-5 text-sm xl:text-lg">
               {/* Draft Phase */}
               <div className="flex items-center gap-2">
-                <span className="text-gray-400 uppercase cursor-help" title="Current stage of the draft based on percentage of players drafted. Opening (0-10%), Early (10-25%), Middle (25-50%), Late (50-75%), Closing (75-90%), Endgame (90-100%). Each phase has different strategy implications.">
-                  Phase:
-                </span>
+                <span className="text-gray-400 uppercase">Phase:</span>
                 <span className={`font-bold ${
                   dashboardData.marketContext.draftProgress < 10 ? 'text-blue-400' :
                   dashboardData.marketContext.draftProgress < 25 ? 'text-cyan-400' :
@@ -921,48 +921,42 @@ export function App() {
                    dashboardData.marketContext.draftProgress < 50 ? 'MIDDLE' :
                    dashboardData.marketContext.draftProgress < 75 ? 'LATE' :
                    dashboardData.marketContext.draftProgress < 90 ? 'CLOSING' :
-                   'ENDGAME'} ({safeToFixed(dashboardData.marketContext.draftProgress, 0)}%)
+                   'ENDGAME'} ({dashboardData.marketContext.draftProgress.toFixed(0)}%)
                 </span>
               </div>
               
               {/* Momentum */}
               <div className="flex items-center gap-2">
-                <span className="text-gray-400 uppercase cursor-help" title="Market temperature based on inflation rate. Cold (<0.95x) = bargains available, Warm (0.95-1.05x) = fair prices, Hot (1.05-1.15x) = rising prices, Overheated (>1.15x) = bidding wars likely.">
-                  Momentum:
-                </span>
+                <span className="text-gray-400 uppercase">Momentum:</span>
                 <span className="font-bold">
-                  {dashboardData.marketContext.inflationRate < 0.95 ? 'COLD' :
-                   dashboardData.marketContext.inflationRate < 1.05 ? 'WARM' :
-                   dashboardData.marketContext.inflationRate < 1.15 ? 'HOT' :
-                   'OVERHEATED'}
+                  {dashboardData.marketContext.inflationRate < 0.95 ? '❄️ COLD' :
+                   dashboardData.marketContext.inflationRate < 1.05 ? '🌡️ WARM' :
+                   dashboardData.marketContext.inflationRate < 1.15 ? '🔥 HOT' :
+                   '🌋 OVERHEATED'}
                 </span>
               </div>
               
               {/* Inflation */}
               <div className="flex items-center gap-2">
-                <span className="text-gray-400 uppercase cursor-help" title="Ratio of remaining money to remaining value. >1.0 means prices will be higher than normal (inflation), <1.0 means bargains available (deflation). Calculated as (money left / slots left) ÷ baseline average.">
-                  Inflation:
-                </span>
+                <span className="text-gray-400 uppercase">Inflation:</span>
                 <span className={`font-bold font-mono ${
                   dashboardData.marketContext.inflationRate > 1.15 ? 'text-red-400' :
                   dashboardData.marketContext.inflationRate > 1.05 ? 'text-yellow-400' :
                   'text-green-400'
                 }`}>
-                  {safeToFixed(dashboardData.marketContext.inflationRate, 2)}×
+                  {dashboardData.marketContext.inflationRate.toFixed(2)}×
                 </span>
               </div>
               
               {/* Spending Pace */}
               <div className="flex items-center gap-2">
-                <span className="text-gray-400 uppercase cursor-help" title="Compares actual spending to expected spending at this point. >110% = Fast (teams overspending early), 90-110% = Normal, <90% = Slow (teams saving for later). Fast pace often leads to bargains later.">
-                  Pace:
-                </span>
+                <span className="text-gray-400 uppercase">Pace:</span>
                 <span className={`font-bold ${
                   dashboardData.marketContext.paceVsExpected > 1.1 ? 'text-red-400' :
                   dashboardData.marketContext.paceVsExpected < 0.9 ? 'text-blue-400' :
                   'text-green-400'
                 }`}>
-                  {safeToFixed((dashboardData.marketContext.paceVsExpected || 0) * 100, 0)}%
+                  {(dashboardData.marketContext.paceVsExpected * 100).toFixed(0)}%
                   {dashboardData.marketContext.paceVsExpected > 1.1 && ' (Fast)'}
                   {dashboardData.marketContext.paceVsExpected < 0.9 && ' (Slow)'}
                 </span>
@@ -970,19 +964,15 @@ export function App() {
               
               {/* Avg per Team */}
               <div className="flex items-center gap-2">
-                <span className="text-gray-400 uppercase cursor-help" title="Average budget remaining per team. Compare your remaining budget to this to see if you're cash-rich (can be aggressive) or cash-poor (need bargains) relative to competition.">
-                  Avg/Team:
-                </span>
+                <span className="text-gray-400 uppercase">Avg/Team:</span>
                 <span className="font-bold text-cyan-400 font-mono">
-                  ${safeToFixed(dashboardData.marketContext.avgTeamRemaining, 0)}
+                  ${dashboardData.marketContext.avgTeamRemaining.toFixed(0)}
                 </span>
               </div>
               
               {/* Remaining Budget Pool */}
               <div className="flex items-center gap-2">
-                <span className="text-gray-400 uppercase cursor-help" title="Total money remaining across all teams. This is the entire budget pool still available to be spent. As this shrinks, competition for remaining players intensifies.">
-                  Pool:
-                </span>
+                <span className="text-gray-400 uppercase">Pool:</span>
                 <span className="font-bold text-green-400 font-mono">
                   ${dashboardData.marketContext.totalRemaining}
                 </span>
@@ -990,14 +980,6 @@ export function App() {
             </div>
             
             <div className="flex items-center space-x-4">
-              {/* Methodology Button - Moved to right side */}
-              <button
-                onClick={() => setShowMethodology(true)}
-                className="p-1.5 rounded-lg bg-dark-bg hover:bg-blue-600 transition-all text-dark-text-secondary hover:text-white"
-                title="Methodology & Calculations"
-              >
-                <HelpCircle className="w-5 h-5 xl:w-6 xl:h-6" />
-              </button>
               
               {/* Data Quality Indicator - DISABLED FOR PERFORMANCE
               Validation features commented out to improve load time
@@ -1029,6 +1011,39 @@ export function App() {
                 )}
               </button>
               */}
+              
+              {/* Action Buttons - Grouped together */}
+              <div className="flex items-center gap-1">
+                {/* Team Command Center Button - TEMPORARILY DISABLED FOR DEVELOPMENT
+                <button
+                  onClick={() => {
+                    // Save current state to localStorage for the new window
+                    localStorage.setItem('ff_players', JSON.stringify(extendedPlayers));
+                    localStorage.setItem('ff_teams', JSON.stringify(teams));
+                    localStorage.setItem('ff_draftHistory', JSON.stringify(draftHistory));
+                    localStorage.setItem('ff_userTeamId', myTeam.id);
+                    // Open auction command center in new window using hash routing
+                    window.open('/ff/#/auction-command', 'auctionCommand', 'width=1400,height=900');
+                  }}
+                  className="p-2 rounded-lg bg-dark-bg hover:bg-blue-600 transition-all text-dark-text-secondary hover:text-white"
+                  title="Team Management Command Center - Opens in new window"
+                >
+                  <Users className="w-5 h-5" />
+                </button>
+                */}
+                
+                {/* Methodology Button */}
+                <button
+                  onClick={() => {
+                    // Open methodology in new window using hash routing
+                    window.open('/ff/#/methodology', 'methodology', 'width=1200,height=800');
+                  }}
+                  className="p-2 rounded-lg bg-dark-bg hover:bg-blue-600 transition-all text-dark-text-secondary hover:text-white"
+                  title="Methodology & Calculations"
+                >
+                  <HelpCircle className="w-6 h-6 xl:w-8 xl:h-8" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1042,19 +1057,33 @@ export function App() {
             <div className="col-span-12 xl:col-span-2 2xl:col-span-2 space-y-4">
               
               {/* My Team Box - Below Smart Recommendations */}
-              <div className="bg-gray-800 rounded-md p-3 xl:p-5 border border-gray-600">
-                <div className="mb-3 xl:mb-4">
-                  <h3 className="text-base xl:text-lg font-semibold text-dark-text">
+              <div className="bg-dark-bg-secondary rounded-xl p-4 xl:p-5 border border-dark-border">
+                <div className="flex items-center justify-between mb-3 xl:mb-4">
+                  <h3 className="text-base xl:text-lg font-semibold text-dark-text flex items-center gap-2">
+                    <Users className="w-5 h-5 xl:w-6 xl:h-6 text-draft-primary" />
                     My Team ({myTeam.roster.length}/16)
                   </h3>
+                  <span className="text-xs xl:text-base font-bold text-yellow-500">
+                    Need: {(() => {
+                      const positionCounts: Record<string, number> = {
+                        QB: 0, RB: 0, WR: 0, TE: 0, K: 0, DST: 0
+                      };
+                      myTeam.roster.forEach(p => {
+                        positionCounts[p.position]++;
+                      });
+                      // Full roster requirements: 16 players total
+                      // 2 QB, 4 RB, 4 WR, 2 TE, 1 K, 1 DST = 14 + 2 FLEX (RB/WR/TE)
+                      const requirements = { QB: 2, RB: 4, WR: 4, TE: 2, K: 1, DST: 1 };
+                      const critical: string[] = [];
+                      Object.entries(requirements).forEach(([pos, needed]) => {
+                        if (positionCounts[pos] < needed) {
+                          critical.push(pos);
+                        }
+                      });
+                      return critical.length > 0 ? critical.join(', ') : 'Complete';
+                    })()}
+                  </span>
                 </div>
-                
-                {/* Priority Needs - Moved from Team Command Center */}
-                <PriorityNeeds 
-                  roster={myTeam.roster}
-                  remainingBudget={myTeam.budget - myTeam.spentBudget}
-                  spotsLeft={16 - myTeam.roster.length}
-                />
                 
                 {/* Position Requirements - One per line */}
                 <div className="space-y-2 mb-4">
@@ -1078,21 +1107,45 @@ export function App() {
                       }
                     
                     return (
-                      <div key={pos} className="flex items-center gap-3 mb-2">
-                        <span className="text-cyan-400 font-bold text-xs xl:text-base w-10">{pos}</span>
-                        
-                        <div className="flex-1 h-4 bg-gray-900 rounded-full overflow-hidden relative">
-                          <div 
-                            className="h-full transition-all duration-500 bg-gradient-to-r from-green-600 to-green-400"
-                            style={{ width: `${Math.min(100, (count / needed) * 100)}%` }}
-                          />
+                      <div key={pos} className="border-b border-dark-border pb-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] xl:text-base font-bold px-1 py-0.5 rounded text-white ${
+                              pos === 'FLEX' ? 'bg-purple-600' : `bg-position-${pos.toLowerCase()}`
+                            }`}>
+                              {pos}
+                            </span>
+                            <span className={`text-xs ${
+                              count >= needed ? 'text-green-400' : 
+                              count > 0 ? 'text-yellow-400' : 
+                              'text-gray-400'
+                            }`}>
+                              {count}/{needed} 
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="w-full bg-dark-bg-tertiary rounded-full h-3 overflow-hidden">
+                              <div 
+                                className={`h-3 rounded-full transition-all ${
+                                  count === 0 ? 'bg-gray-500' :
+                                  count < needed ? 'bg-yellow-500' : 
+                                  'bg-green-500'
+                                }`}
+                                style={{ width: `${Math.min(100, (count / needed) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
                         </div>
-                        
-                        <div className="flex items-center gap-2 text-[10px] xl:text-sm">
-                          <span className="text-gray-400">
-                            {count}/{needed}
-                          </span>
-                        </div>
+                        {/* Show drafted players */}
+                        {players.length > 0 && (
+                          <div className="ml-8 space-y-1">
+                            {players.map((player, idx) => (
+                              <div key={idx} className="text-[10px] xl:text-base text-dark-text-secondary">
+                                • {player.name} ({player.team})
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1107,12 +1160,12 @@ export function App() {
                         ${myTeam.budget - myTeam.spentBudget}
                       </span>
                     </div>
-                    <div className="w-full bg-gray-900 rounded-full h-4 overflow-hidden">
+                    <div className="w-full bg-dark-bg-tertiary rounded-full h-1 overflow-hidden">
                       <div 
-                        className={`h-full transition-all duration-500 ${
-                          (myTeam.budget - myTeam.spentBudget) > 140 ? 'bg-gradient-to-r from-green-600 to-green-400' :
-                          (myTeam.budget - myTeam.spentBudget) > 50 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' :
-                          'bg-gradient-to-r from-red-600 to-red-400'
+                        className={`h-1 rounded-full transition-all ${
+                          (myTeam.budget - myTeam.spentBudget) > 140 ? 'bg-green-500' :
+                          (myTeam.budget - myTeam.spentBudget) > 50 ? 'bg-green-500' :
+                          'bg-red-500'
                         }`}
                         style={{ width: `${Math.min(100, ((myTeam.budget - myTeam.spentBudget) / 200) * 100)}%` }}
                       />
@@ -1174,49 +1227,11 @@ export function App() {
               ) : (
                 <div className="bg-dark-bg-secondary rounded-xl border border-dark-border overflow-hidden">
                   <div className="px-4 xl:px-6 py-3 xl:py-5 bg-dark-bg-tertiary border-b border-dark-border">
-                    {/* First row - Showing, View Mode Buttons, and Sorted by */}
+                    {/* First row - Showing and Sorted by */}
                     <div className="flex items-center justify-between gap-3 mb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm xl:text-lg text-dark-text-secondary whitespace-nowrap">
-                          Showing {Math.min(displayCount, sortedPlayers.length)} of {sortedPlayers.length} players
-                        </span>
-                        {/* Table View Mode Toggle - Moved here */}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setTableViewMode('ALL')}
-                            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                              tableViewMode === 'ALL'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                            }`}
-                            title="Show all players"
-                          >
-                            ALL
-                          </button>
-                          <button
-                            onClick={() => setTableViewMode('BUYS')}
-                            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                              tableViewMode === 'BUYS'
-                                ? 'bg-green-600 text-white'
-                                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                            }`}
-                            title="Best values: Strong-buy or 15%+ edge"
-                          >
-                            BEST VALUES
-                          </button>
-                          <button
-                            onClick={() => setTableViewMode('TRAPS')}
-                            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                              tableViewMode === 'TRAPS'
-                                ? 'bg-red-600 text-white'
-                                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                            }`}
-                            title="Overpriced: Strong-avoid or -10% edge"
-                          >
-                            OVERPRICED
-                          </button>
-                        </div>
-                      </div>
+                      <span className="text-sm xl:text-lg text-dark-text-secondary whitespace-nowrap">
+                        Showing {Math.min(displayCount, sortedPlayers.length)} of {sortedPlayers.length} players
+                      </span>
                       <span className="text-sm xl:text-lg text-dark-text-secondary whitespace-nowrap">
                         Sorted by: <span className="font-medium text-dark-text">
                           {sortColumn === 'edge' ? 'Edge ($)' :
@@ -1256,7 +1271,7 @@ export function App() {
                             }
                             setSelectedPositions(newSelection);
                           }}
-                          className={`text-sm xl:text-base font-bold py-1 xl:py-1.5 px-1.5 xl:px-2 rounded flex-1 h-6 xl:h-8 min-h-[1.5rem] bg-position-${position.toLowerCase()} text-white cursor-pointer ${
+                          className={`text-xs xl:text-base font-bold py-1.5 xl:py-2 px-2 xl:px-3 rounded flex-1 h-7 xl:h-9 min-h-[1.75rem] bg-position-${position.toLowerCase()} text-white cursor-pointer ${
                             selectedPositions.has(position)
                               ? 'opacity-100'
                               : 'opacity-40 hover:opacity-70'
@@ -1283,7 +1298,7 @@ export function App() {
                           setShowOnlyAvailable(newState);
                           console.log('State set to:', newState);
                         }}
-                        className={`text-sm xl:text-base font-bold py-1 xl:py-1.5 px-1.5 xl:px-2 rounded flex-1 h-6 xl:h-8 min-h-[1.5rem] bg-green-600 text-white cursor-pointer ${
+                        className={`text-xs xl:text-base font-bold py-1.5 xl:py-2 px-2 xl:px-3 rounded flex-1 h-7 xl:h-9 min-h-[1.75rem] bg-green-600 text-white cursor-pointer ${
                           showOnlyAvailable 
                             ? 'opacity-100' 
                             : 'opacity-40 hover:opacity-70'
@@ -1291,11 +1306,11 @@ export function App() {
                       >
                         Available
                       </button>
-                      <div className="w-[40px]">
+                      <div className="w-[24px]">
                         {selectedPositions.size > 0 && (
                           <button
                             onClick={() => setSelectedPositions(new Set())}
-                            className="text-xs text-dark-text-secondary hover:text-dark-text px-1 py-0.5 w-full rounded bg-gray-700 hover:bg-gray-600"
+                            className="text-[7px] text-dark-text-secondary hover:text-dark-text px-0.5 w-full h-3"
                           >
                             Clear
                           </button>
@@ -1479,14 +1494,51 @@ export function App() {
                       {selectedBadges.size > 0 && (
                         <button
                           onClick={() => setSelectedBadges(new Set())}
-                          className="text-xs text-dark-text-secondary hover:text-dark-text px-1 py-0.5 rounded bg-gray-700 hover:bg-gray-600 ml-1"
+                          className="text-[7px] text-white hover:text-gray-300 ml-1"
                         >
                           Clear
                         </button>
                       )}
                     </div>
+                    
+                    {/* Table View Mode Toggle - Strict Filtering */}
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => setTableViewMode('ALL')}
+                        className={`px-4 py-1.5 rounded text-sm xl:text-base font-medium transition-colors ${
+                          tableViewMode === 'ALL'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                        }`}
+                        title="Show all players"
+                      >
+                        ALL
+                      </button>
+                      <button
+                        onClick={() => setTableViewMode('BUYS')}
+                        className={`px-4 py-1.5 rounded text-sm xl:text-base font-medium transition-colors ${
+                          tableViewMode === 'BUYS'
+                            ? 'bg-green-600 text-white'
+                            : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                        }`}
+                        title="Best values: Strong-buy or 15%+ edge"
+                      >
+                        BEST VALUES
+                      </button>
+                      <button
+                        onClick={() => setTableViewMode('TRAPS')}
+                        className={`px-4 py-1.5 rounded text-sm xl:text-base font-medium transition-colors ${
+                          tableViewMode === 'TRAPS'
+                            ? 'bg-red-600 text-white'
+                            : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                        }`}
+                        title="Overpriced: Strong-avoid or -10% edge"
+                      >
+                        OVERPRICED
+                      </button>
+                    </div>
                   </div>
-                  <DualScrollTable>
+                  <div className="overflow-x-auto">
                   <table className="w-full min-w-max">
                     <thead className="bg-dark-bg-tertiary">
                       <tr>
@@ -1730,7 +1782,7 @@ export function App() {
                           <td className="text-center px-0.5 py-0.5 w-16">
                             <button
                               onClick={() => handleDraftPlayer(player)}
-                              className="bg-draft-primary hover:bg-blue-700 text-white text-xs font-medium py-0.5 xl:py-1 px-1.5 xl:px-3 rounded transition-colors"
+                              className="bg-draft-primary hover:bg-blue-700 text-white text-xs font-medium py-0.5 xl:py-1.5 px-2 xl:px-4 rounded transition-colors"
                             >
                               Draft
                             </button>
@@ -1805,7 +1857,7 @@ export function App() {
                                   player.cvsScore < ((player.auctionValue ?? 0) * 2.5)
                                 ) && (
                                   <span className="text-sm xl:text-base px-0.5 py-0 bg-red-600/20 text-red-500 rounded font-bold cursor-help" 
-                                        title={`Overvalued - $${player.auctionValue} price but CVS ${safeToFixed(player.cvsScore, 0)} (expected ${Math.round((player.auctionValue ?? 0) * 2.5)}+)`}>
+                                        title={`Overvalued - $${player.auctionValue} price but CVS ${player.cvsScore.toFixed(1)} (expected ${Math.round((player.auctionValue ?? 0) * 2.5)}+)`}>
                                     📉
                                   </span>
                                 )}
@@ -1937,7 +1989,7 @@ export function App() {
                                                cwe <= -5 ? 'text-red-500' :
                                                cwe <= -2 ? 'text-orange-400' :
                                                'text-gray-400';
-                                  return <span className={color}>{cwe > 0 ? '+' : ''}{safeToFixed(cwe, 0)}</span>;
+                                  return <span className={color}>{cwe > 0 ? '+' : ''}{cwe.toFixed(1)}</span>;
                                 })()}
                               </td>
                               {/* ADP */}
@@ -1952,8 +2004,8 @@ export function App() {
                                 player.adp <= 192 ? 'text-red-600' :
                                 'text-gray-500'
                               }`}>
-                                <span title={`Raw: ${player.adp}, Formatted: ${safeRound(Number(player.adp))}`}>
-                                  {safeRound(Number(player.adp))}
+                                <span title={`Raw: ${player.adp}, Formatted: ${Number(player.adp).toFixed(1)}`}>
+                                  {Number(player.adp).toFixed(1)}
                                 </span>
                               </td>
                             </>
@@ -1967,7 +2019,7 @@ export function App() {
                               player.cvsScore >= 40 ? 'text-orange-500' :
                               player.cvsScore >= 30 ? 'text-red-500' :
                               'text-gray-500'
-                            }`}>{isNaN(player.cvsScore) ? 'N/A' : safeToFixed(player.cvsScore, 0)}</td>
+                            }`}>{isNaN(player.cvsScore) ? 'N/A' : player.cvsScore.toFixed(1)}</td>
                           )}
                           <td className={`text-center px-0.5 py-0.5 text-[13px] xl:text-lg font-mono w-14 ${
                             player.projectedPoints >= 300 ? 'text-purple-400' :
@@ -2006,7 +2058,7 @@ export function App() {
                                 player.sos <= 8 ? 'bg-orange-500/20 text-orange-400' :
                                 'bg-red-500/30 text-red-400'
                               }`}>
-                                {safeToFixed(player.sos, 0)}
+                                {player.sos.toFixed(1)}
                                 </div>
                               ) : (
                                 <span className="text-gray-600">-</span>
@@ -2017,11 +2069,11 @@ export function App() {
                       ))}
                     </tbody>
                   </table>
-                  </DualScrollTable>
+                  </div>
                   {sortedPlayers.length > displayCount && (
                     <div className="p-4 xl:p-7 border-t border-dark-border">
                       <button
-                        onClick={() => setDisplayCount(prev => prev + 20)}
+                        onClick={() => setDisplayCount(prev => prev + 30)}
                         className="w-full bg-dark-bg hover:bg-dark-bg-tertiary text-dark-text text-xs xl:text-base font-medium py-1.5 px-3 rounded-lg transition-colors"
                       >
                         Show More ({sortedPlayers.length - displayCount} remaining)
@@ -2052,14 +2104,15 @@ export function App() {
               
               {/* Draft History - Recent Picks */}
               {draftHistory.length > 0 && (
-                <div className="bg-gray-800 rounded-md p-3 xl:p-5 border border-gray-600">
+                <div className="bg-dark-bg-secondary rounded-xl p-4 border border-dark-border">
                   <DraftHistory />
                 </div>
               )}
               
               {/* Team Budgets */}
-              <div className="bg-gray-800 rounded-md p-3 xl:p-5 border border-gray-600">
-                <h3 className="text-base xl:text-lg font-semibold text-dark-text mb-3 xl:mb-5">
+              <div className="bg-dark-bg-secondary rounded-xl p-4 border border-dark-border">
+                <h3 className="text-sm xl:text-base font-semibold text-dark-text mb-3 xl:mb-5 flex items-center gap-2">
+                  <Users className="w-4 h-4 xl:w-5 xl:h-5 text-blue-500" />
                   The Competition
                 </h3>
                 
@@ -2154,9 +2207,13 @@ export function App() {
                           
                           
                           {/* Budget Bar */}
-                          <div className="w-full bg-gray-900 rounded-full h-2 mt-2 overflow-hidden">
+                          <div className="w-full bg-dark-bg-tertiary rounded-full h-1.5 mt-2 overflow-hidden">
                             <div 
-                              className="h-full transition-all duration-500 bg-gradient-to-r from-green-600 to-green-400"
+                              className={`h-1.5 rounded-full transition-all ${
+                                remaining > 140 ? 'bg-green-500' :
+                                remaining > 50 ? 'bg-green-500' :
+                                'bg-red-500'
+                              }`}
                               style={{ width: `${Math.min(100, (remaining / 200) * 100)}%` }}
                             />
                           </div>
@@ -2363,7 +2420,7 @@ export function App() {
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-[10px] xl:text-sm text-dark-text-secondary">ADP</span>
                       <span className="text-sm font-bold text-blue-400">
-                        {draftPriceModal.player.adp ? safeToFixed(draftPriceModal.player.adp, 1) : 'N/A'}
+                        {draftPriceModal.player.adp ? draftPriceModal.player.adp.toFixed(1) : 'N/A'}
                       </span>
                     </div>
                     <div className="text-[10px] xl:text-sm text-dark-text-secondary">
@@ -2500,7 +2557,7 @@ export function App() {
                         })()}
                       </div>
                       <div className="text-sm xl:text-base text-dark-text-secondary">
-                        {Math.round((draftPriceModal.player.rushAttempts || 0) + (draftPriceModal.player.receptions || 0))} touches
+                        {(draftPriceModal.player.rushAttempts || 0) + (draftPriceModal.player.receptions || 0)} touches
                       </div>
                     </div>
 
@@ -2512,7 +2569,7 @@ export function App() {
                           {Math.round(((draftPriceModal.player.targets ?? 0) / 550) * 100)}%
                         </div>
                         <div className="text-sm xl:text-base text-dark-text-secondary">
-                          {Math.round(draftPriceModal.player.targets || 0)} targets
+                          {draftPriceModal.player.targets} targets
                         </div>
                       </div>
                     )}
@@ -2525,7 +2582,7 @@ export function App() {
                           {Math.round(((draftPriceModal.player.receptions ?? 0) / (draftPriceModal.player.targets ?? 1)) * 100)}%
                         </div>
                         <div className="text-sm xl:text-base text-dark-text-secondary">
-                          {Math.round(draftPriceModal.player.receptions || 0)}/{Math.round(draftPriceModal.player.targets || 0)}
+                          {draftPriceModal.player.receptions}/{draftPriceModal.player.targets}
                         </div>
                       </div>
                     )}
@@ -2541,7 +2598,7 @@ export function App() {
                         })()}%
                       </div>
                       <div className="text-sm xl:text-base text-dark-text-secondary">
-                        {Math.round((draftPriceModal.player.rushTDs || 0) + (draftPriceModal.player.receivingTDs || 0))} TDs
+                        {(draftPriceModal.player.rushTDs || 0) + (draftPriceModal.player.receivingTDs || 0)} TDs
                       </div>
                     </div>
 
@@ -2553,7 +2610,7 @@ export function App() {
                           {Math.round((draftPriceModal.player.rushYards ?? 0) / (draftPriceModal.player.rushAttempts ?? 1))}
                         </div>
                         <div className="text-sm xl:text-base text-dark-text-secondary">
-                          {Math.round(draftPriceModal.player.rushYards || 0)} yards
+                          {draftPriceModal.player.rushYards} yards
                         </div>
                       </div>
                     )}
@@ -2565,7 +2622,7 @@ export function App() {
                           {Math.round((draftPriceModal.player.receivingYards ?? 0) / (draftPriceModal.player.receptions ?? 1))}
                         </div>
                         <div className="text-sm xl:text-base text-dark-text-secondary">
-                          {Math.round(draftPriceModal.player.receivingYards || 0)} yards
+                          {draftPriceModal.player.receivingYards} yards
                         </div>
                       </div>
                     )}
@@ -2728,15 +2785,6 @@ export function App() {
             isEmbedded={true}
           />
         </DraggableModal>
-      )}
-
-      {/* Methodology Modal */}
-      {showMethodology && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-800 rounded-lg max-w-4xl max-h-[90vh] overflow-auto">
-            <MethodologyDocs onClose={() => setShowMethodology(false)} />
-          </div>
-        </div>
       )}
 
     </div>

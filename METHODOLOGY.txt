@@ -1,0 +1,412 @@
+========================================================================
+    FANTASY FOOTBALL AUCTION DRAFT OPTIMIZER - COMPLETE METHODOLOGY
+========================================================================
+
+Author: Claude Assistant
+Date: December 2024
+Version: 2.0
+League Type: 12-Team PPR Auction Draft ($200 Budget)
+
+========================================================================
+                        TABLE OF CONTENTS
+========================================================================
+
+1. OVERVIEW
+2. CORE VALUATION FRAMEWORK
+3. INTRINSIC VALUE CALCULATION
+4. MARKET PRICE PREDICTION
+5. EDGE CALCULATION & RECOMMENDATIONS
+6. DYNAMIC ADJUSTMENTS
+7. TECHNICAL IMPLEMENTATION
+
+========================================================================
+1. OVERVIEW
+========================================================================
+
+Our auction draft optimizer uses a sophisticated three-pillar approach:
+
+1. INTRINSIC VALUE: What a player is truly worth based on performance
+2. MARKET PRICE: What the market will likely pay
+3. EDGE: The difference between intrinsic value and market price
+
+The system identifies undervalued players (positive edge) to target and 
+overvalued players (negative edge) to avoid, maximizing roster value.
+
+========================================================================
+2. CORE VALUATION FRAMEWORK
+========================================================================
+
+The valuation process follows these steps:
+
+1. Calculate VORP (Value Over Replacement Player)
+2. Convert VORP to dollar values
+3. Apply position-specific adjustments
+4. Normalize to league budget
+5. Compare to market prices
+6. Generate recommendations
+
+Key Principles:
+- All values sum to total league budget ($2,400 for 12 teams)
+- Minimum value is $1 (auction floor)
+- Dynamic adjustments based on draft progress
+
+========================================================================
+3. INTRINSIC VALUE CALCULATION
+========================================================================
+
+3.1 VORP CALCULATION
+-------------------
+VORP = Player's Projected Points - Replacement Level Points
+
+Replacement levels are position-specific baselines representing the last
+starter-quality player at each position.
+
+CODE SNIPPET (intrinsicValueEngine.ts):
+```typescript
+// Calculate VORP (Value Over Replacement Player)
+const vorp = Math.max(0, projectedPoints - replacementLevel);
+
+// Replacement levels based on league demand
+const demand = {
+  QB: 12,  // 1 QB × 12 teams
+  RB: 24,  // 2 RB × 12 teams  
+  WR: 36,  // 3 WR × 12 teams
+  TE: 12,  // 1 TE × 12 teams
+  K: 12,   // 1 K × 12 teams
+  DST: 12  // 1 DST × 12 teams
+};
+```
+
+3.2 VORP TO DOLLARS CONVERSION
+-------------------------------
+Uses a marginal value curve with position-specific scaling:
+
+FORMULA:
+Dollar Value = VORP × Position Multiplier × Budget Scalar
+
+Position Multipliers (reflects scarcity):
+- QB: 0.85 (many quality QBs available)
+- RB: 1.15 (scarce elite RBs)
+- WR: 1.00 (balanced)
+- TE: 1.10 (few elite TEs)
+- K/DST: 0.40 (replaceable)
+
+CODE SNIPPET (marginalValueCurve.ts):
+```typescript
+vorpToDollars(vorp: number, position: Position): number {
+  const positionMultipliers = {
+    QB: 0.85, RB: 1.15, WR: 1.00, 
+    TE: 1.10, K: 0.40, DST: 0.40
+  };
+  
+  const baseValue = Math.pow(vorp, 0.75) * this.scalingFactor;
+  return baseValue * positionMultipliers[position];
+}
+```
+
+3.3 BENCH DISCOUNTS
+-------------------
+Non-starting players receive position-specific discounts:
+
+- QB bench: 35% of value (rarely start)
+- RB bench: 70% of value (injury replacements)
+- WR bench: 55% of value (bye week fills)
+- TE bench: 50% of value (occasional starts)
+- K/DST bench: 20% of value (almost never needed)
+
+3.4 BUDGET NORMALIZATION
+------------------------
+Uses water-filling algorithm to ensure all values sum to $2,400:
+
+1. Calculate total raw value
+2. Apply scaling factor
+3. Enforce $1 minimum
+4. Redistribute excess iteratively
+
+CODE SNIPPET:
+```typescript
+private normalizeToLeagueBudget(values: IntrinsicValue[]): IntrinsicValue[] {
+  const totalBudget = this.leagueSettings.numTeams * this.leagueSettings.budget;
+  const draftableCount = this.leagueSettings.numTeams * this.leagueSettings.rosterSize;
+  
+  // Only normalize draftable pool
+  const draftablePlayers = values.slice(0, draftableCount);
+  
+  // Water-filling algorithm
+  let remainingBudget = totalBudget;
+  let remainingPlayers = draftablePlayers.length;
+  
+  // Enforce $1 minimum and redistribute
+  // ... iterative normalization logic
+}
+```
+
+========================================================================
+4. MARKET PRICE PREDICTION
+========================================================================
+
+4.1 BASE PRICE CALCULATION
+--------------------------
+Combines multiple data sources with confidence weighting:
+
+FORMULA:
+Base Price = (AAV × 0.65) + (ADP_Converted × 0.35)
+
+Where ADP_Converted uses exponential decay:
+ADP_Converted = 200 × e^(-0.025 × ADP)
+
+CODE SNIPPET (marketPriceModel.ts):
+```typescript
+private calculateBasePrice(player: Player): number {
+  // AAV is primary signal (65% weight)
+  const aavComponent = (player.auctionValue || 1) * 0.65;
+  
+  // Convert ADP to dollar value (35% weight)
+  const adpValue = this.adpToValue(player.adp || 200);
+  const adpComponent = adpValue * 0.35;
+  
+  return Math.max(1, aavComponent + adpComponent);
+}
+```
+
+4.2 MARKET CONDITION ADJUSTMENTS
+--------------------------------
+Dynamic adjustments based on draft state:
+
+1. INFLATION ADJUSTMENT
+   Inflation Rate = Remaining Money / (Remaining Players × 10)
+   Adjusted Price = Base Price × Inflation Rate
+
+2. SCARCITY MULTIPLIER
+   If position has < 20% quality players left:
+   Scarcity Multiplier = 1.05 to 1.15
+
+3. RECENT PRICE MOMENTUM
+   Analyzes last 10 picks for position trends
+   Momentum adjustment: ±10% based on overpays/underpays
+
+CODE SNIPPET:
+```typescript
+private adjustForMarketConditions(
+  basePrice: number,
+  player: Player,
+  context: MarketContext
+): number {
+  let adjustedPrice = basePrice;
+  
+  // Apply inflation
+  adjustedPrice *= context.inflationRate;
+  
+  // Apply scarcity premium
+  const scarcityMultiplier = this.calculateScarcity(player.position, context);
+  adjustedPrice *= scarcityMultiplier;
+  
+  // Apply momentum adjustment
+  const momentum = this.calculateMomentum(player.position, context);
+  adjustedPrice *= (1 + momentum);
+  
+  return Math.max(1, Math.round(adjustedPrice));
+}
+```
+
+4.3 CONFIDENCE SCORING
+----------------------
+Confidence reflects prediction reliability:
+
+Factors:
+- Data completeness (AAV/ADP availability): 40%
+- Draft phase (early = higher confidence): 30%
+- Position predictability: 30%
+
+FORMULA:
+Confidence = (Data Score × 0.4) + (Phase Score × 0.3) + (Position Score × 0.3)
+
+========================================================================
+5. EDGE CALCULATION & RECOMMENDATIONS
+========================================================================
+
+5.1 EDGE METRICS
+----------------
+Edge = Intrinsic Value - Market Price
+Edge % = (Edge / Market Price) × 100
+CWE = Edge × Confidence (Confidence-Weighted Edge)
+
+5.2 RECOMMENDATION THRESHOLDS
+-----------------------------
+Uses price-tiered thresholds for recommendations:
+
+CHEAP PLAYERS ($1-3):
+- Strong Buy: Edge% ≥ +30%
+- Buy: Edge% ≥ +15%
+- Hold: -15% < Edge% < +15%
+- Avoid: Edge% ≤ -15%
+- Strong Avoid: Edge% ≤ -30%
+
+MID-RANGE PLAYERS ($4-30):
+- Strong Buy: Edge% ≥ +20%
+- Buy: Edge% ≥ +8%
+- Hold: -8% < Edge% < +8%
+- Avoid: Edge% ≤ -8%
+- Strong Avoid: Edge% ≤ -20%
+
+EXPENSIVE PLAYERS ($30+):
+- Strong Buy: Edge% ≥ +15%
+- Buy: Edge% ≥ +6%
+- Hold: -6% < Edge% < +6%
+- Avoid: Edge% ≤ -6%
+- Strong Avoid: Edge% ≤ -15%
+
+CODE SNIPPET (edgeCalculator.ts):
+```typescript
+private getRecommendation(
+  edge: number,
+  edgePercent: number,
+  value: number,
+  price: number
+): 'strong-buy' | 'buy' | 'hold' | 'avoid' | 'strong-avoid' {
+  let thresholds;
+  
+  if (price <= 3) {
+    thresholds = {
+      strongBuy: 30, buy: 15,
+      avoid: -15, strongAvoid: -30
+    };
+  } else if (price <= 30) {
+    thresholds = {
+      strongBuy: 20, buy: 8,
+      avoid: -8, strongAvoid: -20
+    };
+  } else {
+    thresholds = {
+      strongBuy: 15, buy: 6,
+      avoid: -6, strongAvoid: -15
+    };
+  }
+  
+  if (edgePercent >= thresholds.strongBuy) return 'strong-buy';
+  if (edgePercent >= thresholds.buy) return 'buy';
+  if (edgePercent <= thresholds.strongAvoid) return 'strong-avoid';
+  if (edgePercent <= thresholds.avoid) return 'avoid';
+  
+  return 'hold';
+}
+```
+
+5.3 RECOMMENDATION REASONING
+----------------------------
+System provides contextual reasoning for each recommendation:
+
+Examples:
+- "$15 positive edge (25% discount)"
+- "Elite tier player at position"
+- "High VORP (150 points above replacement)"
+- "Top 5 at position (#3)"
+- "Market is inflated"
+- "Scarce position - act quickly"
+
+========================================================================
+6. DYNAMIC ADJUSTMENTS
+========================================================================
+
+6.1 REAL-TIME RECALCULATION
+---------------------------
+After each draft pick:
+1. Remove drafted player from pool
+2. Recalculate replacement levels
+3. Update VORP for all players
+4. Recalculate intrinsic values
+5. Update market predictions
+6. Refresh all edges and recommendations
+
+6.2 INFLATION TRACKING
+----------------------
+Continuous monitoring of spending patterns:
+
+FORMULA:
+Real Inflation = Money Spent / Expected Spend
+Expected Spend = (Players Drafted / Total Roster Spots) × Total Budget
+
+If Real Inflation > 1.1: Market is hot, prices rising
+If Real Inflation < 0.9: Market is cold, bargains available
+
+6.3 POSITION SCARCITY ALERTS
+----------------------------
+Triggers when quality players become scarce:
+
+Scarcity Score = Players Needed / Players Available
+
+Multipliers applied to market prices:
+- Score < 0.5: 0.90× (oversupplied)
+- Score 0.5-1.0: 1.00× (balanced)
+- Score 1.0-1.5: 1.08× (scarce)
+- Score > 1.5: 1.15× (critical)
+
+========================================================================
+7. TECHNICAL IMPLEMENTATION
+========================================================================
+
+7.1 ARCHITECTURE
+----------------
+- TypeScript for type safety
+- React for UI components
+- Zustand for state management
+- Vite for build tooling
+
+7.2 KEY SERVICES
+----------------
+1. IntrinsicValueEngine: Calculates player worth
+2. MarketPriceModel: Predicts market behavior
+3. EdgeCalculator: Identifies opportunities
+4. DashboardDataService: Unified data source
+5. AuctionMarketTracker: Real-time tracking
+
+7.3 DATA SOURCES
+----------------
+Primary (Canonical):
+- Player projections (CSV)
+- ADP data (CSV)
+- AAV data (CSV)
+- Team/schedule data (CSV)
+
+Secondary (API):
+- Sleeper API for injury updates
+- Real-time news and trends
+
+7.4 PERFORMANCE OPTIMIZATIONS
+-----------------------------
+- Debounced recalculations (150ms)
+- Memoized computations
+- Optimistic UI updates
+- Chunked data processing
+- Progressive loading
+
+7.5 EXAMPLE CALCULATION
+-----------------------
+Player: Saquon Barkley (RB)
+- Projected Points: 285
+- Replacement Level: 140
+- VORP: 145
+- Raw Dollar Value: $38
+- Position Multiplier: 1.15
+- Bench Discount: N/A (starter)
+- Normalized Value: $42
+- Market Price (AAV): $32
+- Edge: +$10
+- Edge%: +31%
+- Confidence: 75%
+- CWE: 7.5
+- Recommendation: STRONG BUY
+
+========================================================================
+                          END OF METHODOLOGY
+========================================================================
+
+This methodology combines statistical analysis, market dynamics, and
+game theory to identify the optimal draft strategy. The system adapts
+in real-time to market conditions, ensuring recommendations remain
+relevant throughout the draft.
+
+For questions or improvements, please refer to the source code in:
+/src/services/valuation/
+/src/services/market/
+/src/services/edge/

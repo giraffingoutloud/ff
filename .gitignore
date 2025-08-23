@@ -57,3 +57,8 @@ pnpm-lock.yaml
 # Debug files
 debug/
 .vscode-test/
+.env.local
+
+# Yahoo API data
+yahoo_data/
+yahoo_tokens.json

@@ -16,13 +16,13 @@ export const CriticalMoments: React.FC<CriticalMomentsProps> = ({ moments, scarc
   const getUrgencyClass = (urgency: string) => {
     switch (urgency) {
       case 'high':
-        return 'border-l-red-900/20 bg-red-900/20';
+        return 'border-l-red-500';
       case 'medium':
-        return 'border-l-yellow-500 bg-yellow-900/20';
+        return 'border-l-yellow-500';
       case 'low':
-        return 'border-l-blue-500 bg-blue-900/20';
+        return 'border-l-blue-500';
       default:
-        return 'border-l-gray-500 bg-gray-900/20';
+        return 'border-l-gray-500';
     }
   };
   
@@ -56,28 +56,26 @@ export const CriticalMoments: React.FC<CriticalMomentsProps> = ({ moments, scarc
   
   if (moments.length === 0) {
     return (
-      <section className="bg-gray-800 border border-gray-600 rounded-md p-3">
-        <h3 className="text-[10px] uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-2">
-          <span className="text-yellow-400 animate-pulse text-xs">⚠️</span>
-          CRITICAL MOMENTS
+      <section className="bg-gray-800 border border-gray-600 rounded-md p-3 xl:p-5">
+        <h3 className="text-base xl:text-lg font-semibold text-dark-text mb-2">
+          Critical Moments
         </h3>
-        <div className="text-xs text-gray-500">No critical situations detected</div>
+        <div className="text-xs xl:text-base text-gray-500">No critical situations detected</div>
       </section>
     );
   }
   
   return (
-    <section className="bg-gray-800 border border-gray-600 rounded-md p-3">
-      <h3 className="text-[10px] uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-2">
-        <span className="text-yellow-400 animate-pulse text-xs">⚠️</span>
-        CRITICAL MOMENTS
+    <section className="bg-gray-800 border border-gray-600 rounded-md p-3 xl:p-5">
+      <h3 className="text-sm xl:text-base font-semibold text-dark-text mb-2">
+        Critical Moments
       </h3>
       
       <div className="space-y-2">
         {moments.slice(0, 3).map((moment, idx) => (
           <div
             key={idx}
-            className={`bg-gray-900 rounded p-3 border-l-4 transition-all ${
+            className={`bg-gray-900 rounded p-3 xl:p-5 border-l-4 transition-all ${
               getUrgencyClass(moment.urgency)
             }`}
             role={moment.urgency === 'high' ? 'alert' : undefined}
@@ -85,19 +83,14 @@ export const CriticalMoments: React.FC<CriticalMomentsProps> = ({ moments, scarc
             <div className="flex items-start gap-2 mb-1">
               <span className="text-sm">{getSeverityIcon(moment.urgency)}</span>
               <div className="flex-1">
-                <div className="font-bold text-xs text-gray-200">
+                <div className="font-bold text-xs xl:text-base text-gray-200">
                   {moment.message}
                 </div>
-                {moment.position !== 'ALL' && (
-                  <span className="text-[10px] bg-gray-700 px-1.5 py-0.5 rounded mt-1 inline-block">
-                    {moment.position}
-                  </span>
-                )}
               </div>
             </div>
             
             {/* Action recommendation */}
-            <div className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
+            <div className="text-[10px] xl:text-sm text-gray-400 mt-2 flex items-center gap-1">
               <span>→</span>
               <span>
                 {moment.type === 'last-elite' && 'Act within 3-5 picks or lose tier'}
@@ -114,13 +107,13 @@ export const CriticalMoments: React.FC<CriticalMomentsProps> = ({ moments, scarc
                   {moment.affectedPlayers.slice(0, 3).map(player => (
                     <span
                       key={player.id}
-                      className="text-[10px] bg-gray-800 px-1.5 py-0.5 rounded text-cyan-400"
+                      className="text-[10px] xl:text-sm bg-gray-800 px-1.5 py-0.5 rounded text-cyan-400"
                     >
                       {player.name}
                     </span>
                   ))}
                   {moment.affectedPlayers.length > 3 && (
-                    <span className="text-[10px] text-gray-500">
+                    <span className="text-[10px] xl:text-sm text-gray-500">
                       +{moment.affectedPlayers.length - 3} more
                     </span>
                   )}
@@ -132,7 +125,7 @@ export const CriticalMoments: React.FC<CriticalMomentsProps> = ({ moments, scarc
       </div>
       
       {moments.length > 3 && (
-        <div className="mt-2 text-[10px] text-gray-500 text-center">
+        <div className="mt-2 text-[10px] xl:text-sm text-gray-500 text-center">
           {moments.length - 3} more alerts...
         </div>
       )}
@@ -141,7 +134,10 @@ export const CriticalMoments: React.FC<CriticalMomentsProps> = ({ moments, scarc
       {scarcity && scarcity.length > 0 && (
         <>
           <div className="mt-4 pt-3 border-t border-gray-700">
-            <h4 className="text-[10px] uppercase tracking-wider text-gray-400 mb-2">POSITION SCARCITY</h4>
+            <h4 className="text-sm xl:text-base font-semibold text-dark-text mb-2 cursor-help"
+                title="Supply vs demand visualization for each position. Shows how many players are available (S) versus needed (D) across all teams. The multiplier (μ) indicates price inflation: >1.0 means scarce/expensive, <1.0 means oversupplied/cheaper.">
+              Position Scarcity
+            </h4>
             
             <div className="space-y-2">
               {scarcity.map(pos => {
@@ -184,7 +180,7 @@ export const CriticalMoments: React.FC<CriticalMomentsProps> = ({ moments, scarc
                 
                 return (
                   <div key={pos.position} className="flex items-center gap-3">
-                    <span className="text-cyan-400 font-bold text-xs w-8">{pos.position}</span>
+                    <span className="text-cyan-400 font-bold text-xs xl:text-base w-8">{pos.position}</span>
                     
                     <div className="flex-1 h-4 bg-gray-900 rounded-full overflow-hidden relative">
                       <div 
@@ -193,41 +189,17 @@ export const CriticalMoments: React.FC<CriticalMomentsProps> = ({ moments, scarc
                       />
                     </div>
                     
-                    <div className="flex items-center gap-2 text-[10px]">
+                    <div className="flex items-center gap-2 text-[10px] xl:text-sm">
                       <span className="text-gray-400">
                         D:{pos.needed} S:{pos.available}
                       </span>
                       <span className={`px-1.5 py-0.5 rounded border ${classes.badge} font-mono font-bold`}>
-                        μ={multiplier.toFixed(2)}×
+                        μ={(multiplier || 0).toFixed(2)}×
                       </span>
                     </div>
                   </div>
                 );
               })}
-            </div>
-            
-            {/* Legend */}
-            <div className="mt-3 pt-2 border-t border-gray-700 text-[10px]">
-              <div className="flex justify-center gap-6 mb-1">
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                  <span className="text-gray-500">Oversupplied</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                  <span className="text-gray-500">Balanced</span>
-                </div>
-              </div>
-              <div className="flex justify-center gap-6">
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
-                  <span className="text-gray-500">Scarce</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                  <span className="text-gray-500">Critical</span>
-                </div>
-              </div>
             </div>
           </div>
         </>

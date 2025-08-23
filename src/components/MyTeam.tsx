@@ -82,42 +82,42 @@ export const MyTeam: React.FC<MyTeamProps> = ({ team }) => {
   if (dsts.length === 0) needs.push('DST');
 
   return (
-    <div className="bg-white dark:bg-dark-bg-secondary rounded-lg shadow-lg p-4 border border-gray-200 dark:border-dark-border">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-dark-text flex items-center">
-          <User className="w-5 h-5 mr-2" />
+    <div className="bg-white dark:bg-dark-bg-secondary rounded-lg shadow-lg p-6 border border-gray-200 dark:border-dark-border">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-dark-text flex items-center">
+          <User className="w-6 h-6 mr-2" />
           My Team
         </h2>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400">Max Bid:</span>
-          <span className="font-bold text-draft-primary dark:text-blue-400">${maxBid}</span>
+        <div className="flex items-center space-x-3">
+          <span className="text-base text-gray-500 dark:text-gray-400">Max Bid:</span>
+          <span className="font-bold text-lg text-draft-primary dark:text-blue-400">${maxBid}</span>
         </div>
       </div>
 
-      <div className="mb-4 p-3 bg-gray-50 dark:bg-dark-bg-tertiary rounded-lg">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+      <div className="mb-6 p-4 bg-gray-50 dark:bg-dark-bg-tertiary rounded-lg">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div className="flex items-center">
-            <DollarSign className="w-4 h-4 mr-1 text-gray-600" />
-            <span className="text-sm text-gray-600 dark:text-gray-400">Budget:</span>
+            <DollarSign className="w-5 h-5 mr-2 text-gray-600" />
+            <span className="text-base text-gray-600 dark:text-gray-400">Budget:</span>
           </div>
           <div className="text-left sm:text-right">
-            <span className="font-bold text-lg dark:text-dark-text">${remainingBudget}</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400"> / ${team.budget}</span>
+            <span className="font-bold text-xl dark:text-dark-text">${remainingBudget}</span>
+            <span className="text-base text-gray-500 dark:text-gray-400"> / ${team.budget}</span>
           </div>
         </div>
-        <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+        <div className="mt-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
           <div
-            className="bg-draft-primary rounded-full h-2 transition-all"
+            className="bg-draft-primary rounded-full h-3 transition-all"
             style={{ width: `${Math.min(100, ((team.budget - remainingBudget) / team.budget) * 100)}%` }}
           />
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {rosterPositions.map((pos, index) => (
           <div
             key={`${pos.label}-${index}`}
-            className={`p-2 rounded-lg border ${
+            className={`p-3 rounded-lg border ${
               pos.player 
                 ? 'bg-green-50 border-green-200' 
                 : pos.isRequired 
@@ -125,34 +125,34 @@ export const MyTeam: React.FC<MyTeamProps> = ({ team }) => {
                   : 'bg-gray-50 border-gray-200'
             }`}
           >
-            <div className="flex justify-between items-center gap-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex-shrink-0 min-w-[40px]">
+            <div className="flex justify-between items-center gap-3">
+              <span className="text-base font-medium text-gray-700 dark:text-gray-300 flex-shrink-0 min-w-[50px]">
                 {pos.label}
               </span>
               {pos.player ? (
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-lg font-semibold dark:text-dark-text truncate">{pos.player.name}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">${pos.player.purchasePrice}</span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-xl font-semibold dark:text-dark-text truncate">{pos.player.name}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">${pos.player.purchasePrice}</span>
                 </div>
               ) : (
-                <span className="text-xs text-gray-400 dark:text-gray-500 italic">Empty</span>
+                <span className="text-sm text-gray-400 dark:text-gray-500 italic">Empty</span>
               )}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600 dark:text-gray-400">Roster:</span>
-          <span className="font-semibold dark:text-dark-text">{team.roster.length} / 16</span>
+          <span className="text-base text-gray-600 dark:text-gray-400">Roster:</span>
+          <span className="font-semibold text-lg dark:text-dark-text">{team.roster.length} / 16</span>
         </div>
         {needs.length > 0 && (
-          <div className="mt-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Needs:</span>
-            <div className="flex flex-wrap gap-1 mt-1">
+          <div className="mt-3">
+            <span className="text-base text-gray-600 dark:text-gray-400">Needs:</span>
+            <div className="flex flex-wrap gap-2 mt-2">
               {needs.map((need, i) => (
-                <span key={i} className="px-2 py-1 bg-draft-warning text-white text-xs rounded-full">
+                <span key={i} className="px-3 py-1.5 bg-draft-warning text-white text-sm rounded-full">
                   {need}
                 </span>
               ))}

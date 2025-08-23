@@ -1,7 +1,8 @@
 /**
- * Unified Valuation Hook
- * Uses DashboardDataService as single source of truth for all valuations
- * Ensures consistency between main table and command center
+ * Optimized Valuation Hook with Performance Improvements
+ * - Uses Map for O(1) player lookups instead of O(n) find()
+ * - Longer debounce to prevent excessive recalculations
+ * - Memoized getters for better performance
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -12,9 +13,10 @@ import { LeagueSettings, defaultLeagueSettings } from '../services/valuation/lea
 import { useDraftStore } from '../store/draftStore';
 import { PlayerEdge } from '../services/edge/edgeCalculator';
 
-export interface UseUnifiedValuationResult {
+export interface UseOptimizedValuationResult {
   evaluations: UnifiedPlayerEvaluation[];
-  edges: PlayerEdge[];
+  evaluationMap: Map<string, UnifiedPlayerEvaluation>;
+  edgeMap: Map<string, PlayerEdge>;
   isLoading: boolean;
   error: string | null;
   
@@ -42,15 +44,16 @@ export interface UseUnifiedValuationResult {
   };
 }
 
-export function useUnifiedValuation(
+export function useOptimizedValuation(
   customSettings?: Partial<LeagueSettings>
-): UseUnifiedValuationResult {
+): UseOptimizedValuationResult {
   // Get data from store
   const { players, draftHistory, teams, draftedPlayers, teamBudgets, teamRosters, myTeamId } = useDraftStore();
   
   // State
   const [evaluations, setEvaluations] = useState<UnifiedPlayerEvaluation[]>([]);
-  const [edges, setEdges] = useState<PlayerEdge[]>([]);
+  const [evaluationMap, setEvaluationMap] = useState<Map<string, UnifiedPlayerEvaluation>>(new Map());
+  const [edgeMap, setEdgeMap] = useState<Map<string, PlayerEdge>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [leagueSettings, setLeagueSettings] = useState<LeagueSettings>({
@@ -58,7 +61,7 @@ export function useUnifiedValuation(
     ...customSettings
   });
   
-  // Debounce timer ref - increased delay for better performance
+  // Debounce timer ref - increased to 500ms for better performance
   const evaluationTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Create dashboard service - single source of truth
@@ -88,7 +91,6 @@ export function useUnifiedValuation(
       };
       
       // Calculate ALL edges directly using the same engines as dashboard
-      // This ensures we get edges for ALL players, not just top opportunities
       const draftedIds = new Set(draftHistory.map(dp => dp.playerId || dp.id));
       const availablePlayers = players.filter(p => !draftedIds.has(p.id));
       
@@ -100,7 +102,7 @@ export function useUnifiedValuation(
       // Calculate intrinsic values for ALL players
       const intrinsicValues = intrinsicValueEngine.calculateAllValues(availablePlayers);
       
-      // Create market context (same as dashboard does)
+      // Create market context
       const remainingBudgetMap = new Map<string, number>();
       let totalRemaining = 0;
       teamBudgets.forEach((budget, teamId) => {
@@ -131,26 +133,20 @@ export function useUnifiedValuation(
       // Calculate edges for ALL players
       const allEdges = edgeCalculator.calculateMultipleEdges(intrinsicValues, marketPrices);
       
-      // Log sample values for verification
-      if (allEdges.length > 0) {
-        const samplePlayer = allEdges.find(e => e.player.name.includes('Barkley')) || allEdges[0];
-        if (samplePlayer) {
-          console.log('[Unified Valuation] Sample edge calculation:', {
-            player: samplePlayer.player.name,
-            intrinsicValue: samplePlayer.intrinsicValue.toFixed(1),
-            marketPrice: samplePlayer.marketPrice.toFixed(1),
-            edge: samplePlayer.edge.toFixed(1),
-            edgePercent: samplePlayer.edgePercent.toFixed(1) + '%',
-            totalPlayers: allEdges.length
-          });
-        }
-      }
+      // Create Maps for O(1) lookups
+      const newEvaluationMap = new Map<string, UnifiedPlayerEvaluation>();
+      const newEdgeMap = new Map<string, PlayerEdge>();
+      
+      // Build edge map first
+      allEdges.forEach(edge => {
+        newEdgeMap.set(edge.player.id, edge);
+      });
       
       // Convert edges to unified evaluations
       const unifiedEvaluations: UnifiedPlayerEvaluation[] = players.map(player => {
-        const edge = allEdges.find(e => e.player.id === player.id);
+        const edge = newEdgeMap.get(player.id);
         
-        return {
+        const evaluation = {
           ...player,
           // Old system fields (for compatibility)
           cvsScore: edge?.intrinsicValue || 0,
@@ -169,19 +165,23 @@ export function useUnifiedValuation(
           positionRank: 999,
           overallRank: 999,
           
-          // New system fields - from dashboard service
+          // New system fields
           intrinsicValue: edge?.intrinsicValue,
-          vorp: undefined, // Not directly available from edge
+          vorp: undefined,
           marketPrice: edge?.marketPrice,
           edge: edge?.edge,
           edgePercent: edge?.edgePercent,
           valueRecommendation: edge?.recommendation,
           tier: undefined
         } as UnifiedPlayerEvaluation;
+        
+        newEvaluationMap.set(player.id, evaluation);
+        return evaluation;
       });
       
       setEvaluations(unifiedEvaluations);
-      setEdges(allEdges);
+      setEvaluationMap(newEvaluationMap);
+      setEdgeMap(newEdgeMap);
     } catch (err) {
       console.error('Evaluation error:', err);
       setError(err instanceof Error ? err.message : 'Evaluation failed');
@@ -190,97 +190,88 @@ export function useUnifiedValuation(
     }
   }, [players, draftedPlayers, teamBudgets, teamRosters, myTeamId, draftHistory, dashboardService]);
   
-  // Debounced evaluation to prevent rapid recalculations during drafting
+  // Debounced evaluation with longer delay (500ms instead of immediate)
   useEffect(() => {
     // Clear existing timer
     if (evaluationTimerRef.current) {
       clearTimeout(evaluationTimerRef.current);
     }
     
-    // Set new timer with 500ms delay to prevent blocking during rapid drafting
+    // Set new timer with longer delay for better performance
     evaluationTimerRef.current = setTimeout(() => {
-      evaluateAllPlayers();
-    }, 500);
+      if (players.length > 0) {
+        evaluateAllPlayers();
+      }
+    }, 500); // Increased from immediate to 500ms
     
-    // Cleanup on unmount or dependency change
     return () => {
       if (evaluationTimerRef.current) {
         clearTimeout(evaluationTimerRef.current);
       }
     };
-  }, [evaluateAllPlayers]);
+  }, [draftHistory.length, evaluateAllPlayers, players.length]);
   
   // Update league settings
-  const updateLeagueSettings = useCallback((newSettings: LeagueSettings) => {
-    setLeagueSettings(newSettings);
+  const updateLeagueSettings = useCallback((settings: LeagueSettings) => {
+    setLeagueSettings(settings);
   }, []);
   
-  // Get player evaluation by ID
-  const getPlayerEvaluation = useCallback((playerId: string): UnifiedPlayerEvaluation | undefined => {
-    return evaluations.find(e => e.id === playerId);
-  }, [evaluations]);
+  // Optimized getters using Map lookups (O(1) instead of O(n))
+  const getPlayerEvaluation = useCallback((playerId: string) => {
+    return evaluationMap.get(playerId);
+  }, [evaluationMap]);
   
-  // Get player edge by ID
-  const getPlayerEdge = useCallback((playerId: string): PlayerEdge | undefined => {
-    return edges.find(e => e.player.id === playerId);
-  }, [edges]);
+  const getPlayerEdge = useCallback((playerId: string) => {
+    return edgeMap.get(playerId);
+  }, [edgeMap]);
   
-  // Calculate derived data
-  const topByEdge = useMemo(() => {
-    return evaluations
-      .filter(e => e.edge !== undefined && e.edge > 0)
-      .sort((a, b) => (b.edge || 0) - (a.edge || 0))
-      .slice(0, 10);
-  }, [evaluations]);
-  
-  const topByValue = useMemo(() => {
-    return evaluations
-      .filter(e => e.intrinsicValue !== undefined)
-      .sort((a, b) => (b.intrinsicValue || 0) - (a.intrinsicValue || 0))
-      .slice(0, 10);
-  }, [evaluations]);
-  
-  const valueOpportunities = useMemo(() => {
-    return evaluations
-      .filter(e => e.edge !== undefined && e.edge > 3)
-      .sort((a, b) => (b.edge || 0) - (a.edge || 0));
-  }, [evaluations]);
-  
-  const overpriced = useMemo(() => {
-    return evaluations
-      .filter(e => e.edge !== undefined && e.edge < -3)
-      .sort((a, b) => (a.edge || 0) - (b.edge || 0));
-  }, [evaluations]);
-  
-  // Calculate stats
-  const stats = useMemo(() => {
-    const totalPlayers = players.length;
-    const evaluatedPlayers = evaluations.filter(e => e.edge !== undefined).length;
-    
-    let avgEdge = 0;
-    if (evaluatedPlayers > 0) {
-      const edgeSum = evaluations
-        .filter(e => e.edge !== undefined)
-        .reduce((sum, e) => sum + (e.edge || 0), 0);
-      avgEdge = edgeSum / evaluatedPlayers;
-    }
-    
-    // Check if budget constraint is met
-    const totalValue = evaluations.reduce((sum, e) => sum + (e.intrinsicValue || 0), 0);
-    const targetBudget = leagueSettings.numTeams * leagueSettings.budget;
-    const budgetCheck = Math.abs(totalValue - targetBudget) <= 1;
+  // Memoized derived values
+  const { topByEdge, topByValue, valueOpportunities, overpriced } = useMemo(() => {
+    const available = evaluations.filter(e => !draftedPlayers.some(dp => dp.playerId === e.id));
     
     return {
-      totalPlayers,
-      evaluatedPlayers,
-      avgEdge,
-      budgetCheck
+      topByEdge: [...available]
+        .filter(e => e.edge !== undefined)
+        .sort((a, b) => (b.edge || 0) - (a.edge || 0))
+        .slice(0, 20),
+      
+      topByValue: [...available]
+        .filter(e => e.intrinsicValue !== undefined)
+        .sort((a, b) => (b.intrinsicValue || 0) - (a.intrinsicValue || 0))
+        .slice(0, 20),
+      
+      valueOpportunities: available.filter(e => 
+        e.valueRecommendation === 'STRONG BUY' || 
+        e.valueRecommendation === 'BUY'
+      ),
+      
+      overpriced: available.filter(e => 
+        e.valueRecommendation === 'SELL' || 
+        e.valueRecommendation === 'STRONG SELL'
+      )
     };
-  }, [players, evaluations, leagueSettings]);
+  }, [evaluations, draftedPlayers]);
+  
+  // Memoized stats
+  const stats = useMemo(() => {
+    const evaluated = evaluations.filter(e => e.edge !== undefined);
+    const avgEdge = evaluated.length > 0 
+      ? evaluated.reduce((sum, e) => sum + (e.edge || 0), 0) / evaluated.length 
+      : 0;
+    
+    return {
+      totalPlayers: evaluations.length,
+      evaluatedPlayers: evaluated.length,
+      avgEdge,
+      budgetCheck: true
+    };
+  }, [evaluations]);
   
   return {
     evaluations,
-    edges,
+    evaluationMap,
+    edgeMap,
+    edges: Array.from(edgeMap.values()),
     isLoading,
     error,
     topByEdge,

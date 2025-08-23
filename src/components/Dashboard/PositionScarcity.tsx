@@ -46,7 +46,10 @@ export const PositionScarcity: React.FC<PositionScarcityProps> = ({ scarcity }) 
   
   return (
     <section className="bg-gray-800 border border-gray-600 rounded-md p-3">
-      <h3 className="text-[10px] uppercase tracking-wider text-gray-400 mb-2">POSITION SCARCITY</h3>
+      <h3 className="text-2xl font-bold text-dark-text mb-2 cursor-help"
+          title="Supply vs demand visualization for each position. Shows how many players are available (S) versus needed (D) across all teams. The multiplier (μ) indicates price inflation: >1.0 means scarce/expensive, <1.0 means oversupplied/cheaper.">
+        Position Scarcity
+      </h3>
       
       <div className="space-y-2">
         {scarcity.map(pos => {
