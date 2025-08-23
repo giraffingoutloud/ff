@@ -444,11 +444,6 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
             </div>
           </Section>
 
-          <div className="mt-8 p-4 bg-dark-bg-secondary rounded-lg text-center text-dark-text-tertiary text-sm">
-            <p>All calculations are transparent and based on real data from canonical CSV files.</p>
-            <p>No AI-generated or simulated values. Hardcoded parameters are clearly marked.</p>
-            <p className="mt-2 text-xs">Last updated: 2025 Season | ESPN 12-team PPR Auction League</p>
-          </div>
         </div>
       </div>
     </div>
