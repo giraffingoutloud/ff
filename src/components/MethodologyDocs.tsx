@@ -55,7 +55,7 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
       <div className="bg-dark-bg-primary rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-dark-border">
-          <h2 className="text-xl font-bold text-dark-text">📊 Complete Methodology & Calculations</h2>
+          <h2 className="text-xl font-bold text-dark-text">Methodology</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-dark-bg-secondary rounded-lg transition-colors"
@@ -69,7 +69,7 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
           <Section id="overview" title="Overview & Key Concepts" icon={<Calculator className="w-5 h-5 text-blue-400" />}>
             <div className="space-y-4 text-dark-text-secondary">
               <p>
-                This tool uses a <strong className="text-dark-text">three-pillar valuation system</strong> to help you make optimal auction draft decisions:
+                This tool uses three main factors to help you make optimal auction draft decisions:
               </p>
               <ol className="list-decimal list-inside space-y-2 ml-4">
                 <li><strong className="text-dark-text">Intrinsic Value</strong> - What a player is truly worth based on projected performance</li>
@@ -78,7 +78,7 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
               </ol>
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mt-4">
                 <p className="text-sm">
-                  <strong className="text-blue-400">Core Philosophy:</strong> Find players where our calculated intrinsic value exceeds the market's expected price. These positive-edge players represent the best opportunities for building a winning team.
+                  <strong className="text-blue-400">Objective:</strong> Find players where calculated intrinsic value exceeds the market's expected price.
                 </p>
               </div>
             </div>
@@ -190,6 +190,21 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
                   <p className="text-sm">All values are normalized so total equals league budget ($2,400 for 12 teams × $200)</p>
                 </div>
               </div>
+              
+              <h4 className="font-semibold text-dark-text mt-6">📈 Dynamic Updates During Draft</h4>
+              <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 mt-2">
+                <p className="text-sm text-dark-text-secondary mb-2">
+                  Intrinsic values recalculate after each pick:
+                </p>
+                <ul className="list-disc list-inside ml-4 text-sm space-y-1">
+                  <li><strong className="text-purple-400">Replacement Level Updates:</strong> As players get drafted, the Nth best remaining player changes, affecting VORP for all players</li>
+                  <li><strong className="text-purple-400">Position Scarcity:</strong> Values increase for positions becoming scarce</li>
+                  <li><strong className="text-purple-400">Budget Normalization:</strong> Total value of remaining players adjusts to match remaining league budget</li>
+                </ul>
+                <p className="text-xs text-dark-text-tertiary mt-2">
+                  Example: If 5 RBs are drafted, the 36th best RB becomes the 31st best available, raising the replacement level and affecting all RB values
+                </p>
+              </div>
             </div>
           </Section>
 
@@ -236,6 +251,22 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
                   </ul>
                 </div>
               </div>
+              
+              <h4 className="font-semibold text-dark-text mt-6">📈 Dynamic Updates During Draft</h4>
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mt-2">
+                <p className="text-sm text-dark-text-secondary mb-2">
+                  Market prices adjust in real-time based on draft flow:
+                </p>
+                <ul className="list-disc list-inside ml-4 text-sm space-y-1">
+                  <li><strong className="text-yellow-400">Inflation Rate:</strong> Calculated as <code className="text-xs bg-dark-bg px-1 rounded">totalRemaining / (availablePlayers × 10)</code> - increases as money is spent</li>
+                  <li><strong className="text-yellow-400">Position Scarcity:</strong> Multiplier increases when positions get drafted heavily (1.0-1.15x)</li>
+                  <li><strong className="text-yellow-400">Recent Prices:</strong> Last 10 picks influence expected prices (weighted 5-30% based on sample size)</li>
+                  <li><strong className="text-yellow-400">Position Momentum:</strong> Detects "runs" on positions and adjusts accordingly</li>
+                </ul>
+                <p className="text-xs text-dark-text-tertiary mt-2">
+                  Example: If RBs are going 20% over expected value, the model adjusts future RB prices upward to reflect market reality
+                </p>
+              </div>
             </div>
           </Section>
 
@@ -276,7 +307,7 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
 
               <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mt-4">
                 <p className="text-sm">
-                  <strong className="text-green-400">Strategy Tip:</strong> Focus on players with positive edge. A +20% edge means you're getting $1.20 of value for every $1.00 spent.
+                  <strong className="text-green-400">Tip:</strong> Focus on players with positive edge. A +20% edge means you're getting $1.20 of value for every $1.00 spent.
                 </p>
               </div>
             </div>
@@ -438,7 +469,7 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
 
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mt-4">
                 <p className="text-sm">
-                  <strong className="text-blue-400">Pro Tip:</strong> The best drafts combine 2-3 "home run" picks (high edge, moderate confidence) with consistent value picks (moderate edge, high confidence). Don't be afraid of some risk, but don't make every pick risky.
+                  <strong className="text-blue-400">Tip:</strong> The best drafts combine 2-3 "home run" picks (high edge, moderate confidence) with consistent value picks (moderate edge, high confidence).
                 </p>
               </div>
             </div>

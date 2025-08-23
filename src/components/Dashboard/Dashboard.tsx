@@ -6,11 +6,8 @@
 import React, { useMemo } from 'react';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useDraftStore } from '../../store/draftStore';
-import { MarketStatus } from './MarketStatus';
 import { OpportunitiesTable } from './OpportunitiesTable';
-import { PositionScarcity } from './PositionScarcity';
 import { MyRoster } from './MyRoster';
-import { CriticalMoments } from './CriticalMoments';
 import { DashboardDataService, DashboardData } from '../../services/dashboard/dashboardDataService';
 import { defaultLeagueSettings } from '../../services/valuation/leagueSettings';
 
@@ -51,7 +48,6 @@ const Dashboard: React.FC = () => {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
             AUCTION DRAFT COMMAND CENTER
           </h1>
-          <span className="bg-gray-900 px-3 py-1 rounded-full text-xs text-gray-400">v3.3</span>
         </div>
       </div>
       
@@ -80,9 +76,6 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
       
-      {/* Market Status */}
-      <MarketStatus marketContext={dashboardData.marketContext} />
-      
       {/* Main Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mt-4">
         {/* Left Column - Opportunities Table (spans 2 columns on xl) */}
@@ -92,11 +85,15 @@ const Dashboard: React.FC = () => {
         
         {/* Right Column */}
         <div className="space-y-4">
-          {/* Critical Moments */}
-          <CriticalMoments moments={dashboardData.criticalMoments} />
+          {/* Blank space where Critical Moments was */}
+          <div className="bg-gray-800 border border-gray-600 rounded-md p-4" style={{ minHeight: '200px' }}>
+            {/* Placeholder - Critical Moments moved to main page */}
+          </div>
           
-          {/* Position Scarcity */}
-          <PositionScarcity scarcity={dashboardData.positionScarcity} />
+          {/* Blank space where Position Scarcity was */}
+          <div className="bg-gray-800 border border-gray-600 rounded-md p-4" style={{ minHeight: '200px' }}>
+            {/* Placeholder - Position Scarcity moved to main page */}
+          </div>
           
           {/* My Roster */}
           <MyRoster roster={dashboardData.myRoster} />

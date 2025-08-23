@@ -5,18 +5,16 @@ import {
   Trophy, 
   Users, 
   Database, 
-  TrendingUp, 
   ChevronDown,
   ChevronUp,
-  Grid,
   List,
   Sparkles,
   X,
   ArrowUpDown,
   DollarSign,
-  Target,
   Edit2,
-  Check
+  Check,
+  HelpCircle
 } from 'lucide-react';
 import { useDraftStore } from './store/draftStore';
 import { AdvancedPlayerCard } from './components/AdvancedPlayerCard';
@@ -43,9 +41,12 @@ import { Player, Position, Team } from './types';
 import { badgeDataService } from './services/badgeDataService';
 import { EvaluationSettings } from './components/EvaluationSettings';
 import { Settings, Calculator } from 'lucide-react';
-import { useImprovedEvaluation } from './hooks/useImprovedEvaluation';
+import { useUnifiedValuation } from './hooks/useUnifiedValuation';
 import { ImprovedValueDisplay, ValueBadge } from './components/ImprovedValueDisplay';
 import { featureFlags } from './config/featureFlags';
+import { CriticalMoments } from './components/Dashboard/CriticalMoments';
+import { DashboardDataService } from './services/dashboard/dashboardDataService';
+import { defaultLeagueSettings } from './services/valuation/leagueSettings';
 import './utils/findPlayer';
 
 type ViewMode = 'grid' | 'list';
@@ -215,13 +216,40 @@ export function App() {
   const [showSettings, setShowSettings] = useState(false);
   // const [showMethodology, setShowMethodology] = useState(false); // Now opens in new window
 
-  // Use improved evaluation hook for new system
+  // Use unified valuation hook for consistency
   const { 
     evaluations: improvedEvaluations, 
     valueOpportunities,
     overpriced,
-    reevaluate 
-  } = useImprovedEvaluation();
+    reevaluate,
+    getPlayerEdge 
+  } = useUnifiedValuation();
+
+  // Generate dashboard data for critical moments
+  const dashboardService = useMemo(() => new DashboardDataService(defaultLeagueSettings), []);
+  const dashboardData = useMemo(() => {
+    // Create draft state from available data
+    const draftedPlayersSet = new Set(draftHistory.map(dp => dp.id));
+    const teamBudgetsMap = new Map();
+    const teamRostersMap = new Map();
+    
+    teams.forEach(team => {
+      teamBudgetsMap.set(team.id, {
+        spent: team.spentBudget,
+        remaining: team.budget - team.spentBudget
+      });
+      teamRostersMap.set(team.id, team.roster);
+    });
+    
+    const draftState = {
+      draftedPlayers: draftedPlayersSet,
+      teamBudgets: teamBudgetsMap,
+      teamRosters: teamRostersMap,
+      myTeamId: myTeam.id,
+      draftHistory
+    };
+    return dashboardService.generateDashboardData(players, draftState);
+  }, [players, teams, myTeam.id, draftHistory, dashboardService]);
 
   // Load custom team names from localStorage on mount
   useEffect(() => {
@@ -777,12 +805,65 @@ export function App() {
     return (
     <div className="min-h-screen dark bg-dark-bg transition-colors duration-200">
       {/* Modern Header */}
-      <header className="bg-dark-bg-secondary border-b border-dark-border sticky top-0 z-50 backdrop-blur-lg bg-opacity-90">
+      <header className="bg-gradient-to-r from-gray-800 to-gray-700 border-b border-gray-600 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 flex-1">
-              <Trophy className="w-6 h-6 text-yellow-500" />
-              <h1 className="text-base font-bold text-dark-text whitespace-nowrap">Fantasy Auction Draft and Roster Optimizer</h1>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center space-x-3">
+              <Trophy className="w-7 h-7 text-yellow-500" />
+              <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent uppercase whitespace-nowrap">
+                Fantasy Auction Draft Optimizer
+              </h1>
+            </div>
+            
+            {/* Market Status - Compressed */}
+            <div className="flex items-center gap-6 text-xs">
+              {/* Draft Phase */}
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 uppercase">Phase:</span>
+                <span className={`font-bold ${
+                  dashboardData.marketContext.draftProgress < 10 ? 'text-blue-400' :
+                  dashboardData.marketContext.draftProgress < 25 ? 'text-cyan-400' :
+                  dashboardData.marketContext.draftProgress < 50 ? 'text-green-400' :
+                  dashboardData.marketContext.draftProgress < 75 ? 'text-yellow-400' :
+                  dashboardData.marketContext.draftProgress < 90 ? 'text-orange-400' :
+                  'text-red-400'
+                }`}>
+                  {dashboardData.marketContext.draftProgress < 10 ? 'OPENING' :
+                   dashboardData.marketContext.draftProgress < 25 ? 'EARLY' :
+                   dashboardData.marketContext.draftProgress < 50 ? 'MIDDLE' :
+                   dashboardData.marketContext.draftProgress < 75 ? 'LATE' :
+                   dashboardData.marketContext.draftProgress < 90 ? 'CLOSING' :
+                   'ENDGAME'}
+                </span>
+              </div>
+              
+              {/* Inflation */}
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 uppercase">Inflation:</span>
+                <span className={`font-bold font-mono ${
+                  dashboardData.marketContext.inflationRate > 1.15 ? 'text-red-400' :
+                  dashboardData.marketContext.inflationRate > 1.05 ? 'text-yellow-400' :
+                  'text-green-400'
+                }`}>
+                  {dashboardData.marketContext.inflationRate.toFixed(2)}×
+                </span>
+              </div>
+              
+              {/* Remaining Budget */}
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 uppercase">Pool:</span>
+                <span className="font-bold text-green-400 font-mono">
+                  ${dashboardData.marketContext.totalRemaining}
+                </span>
+              </div>
+              
+              {/* Progress */}
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 uppercase">Progress:</span>
+                <span className="font-bold font-mono">
+                  {dashboardData.marketContext.draftProgress.toFixed(0)}%
+                </span>
+              </div>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -818,40 +899,9 @@ export function App() {
               </button>
               */}
               
-              {/* Methodology Button */}
-              <button
-                onClick={() => {
-                  // Open methodology in new window using hash routing
-                  window.open('/ff/#/methodology', 'methodology', 'width=1200,height=800');
-                }}
-                className="p-2 rounded-lg bg-dark-bg hover:bg-dark-bg-secondary transition-colors text-dark-text-secondary hover:text-dark-text"
-                title="Methodology & Calculations"
-              >
-                <Calculator className="w-5 h-5" />
-              </button>
-              
-              {/* Settings Button */}
-              <button
-                onClick={() => setShowSettings(true)}
-                className="p-2 rounded-lg bg-dark-bg hover:bg-dark-bg-secondary transition-colors text-dark-text-secondary hover:text-dark-text"
-                title="Evaluation Settings"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
-              
-              {/* View Mode Selector */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center bg-dark-bg rounded-lg p-1">
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-md transition-colors ${
-                      viewMode === 'list' ? 'bg-draft-primary text-white' : 'text-dark-text-secondary'
-                    }`}
-                    title="List View"
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                </div>
+              {/* Action Buttons - Grouped together */}
+              <div className="flex items-center gap-1">
+                {/* Team Command Center Button - TEMPORARILY DISABLED FOR DEVELOPMENT
                 <button
                   onClick={() => {
                     // Save current state to localStorage for the new window
@@ -862,10 +912,23 @@ export function App() {
                     // Open auction command center in new window using hash routing
                     window.open('/ff/#/auction-command', 'auctionCommand', 'width=1400,height=900');
                   }}
-                  className="p-2 bg-dark-bg rounded-lg text-dark-text-secondary hover:bg-draft-primary hover:text-white transition-colors"
-                  title="Grid View - Auction Draft Command Center"
+                  className="p-2 rounded-lg bg-dark-bg hover:bg-blue-600 transition-all text-dark-text-secondary hover:text-white"
+                  title="Team Management Command Center - Opens in new window"
                 >
-                  <Grid className="w-4 h-4" />
+                  <Users className="w-5 h-5" />
+                </button>
+                */}
+                
+                {/* Methodology Button */}
+                <button
+                  onClick={() => {
+                    // Open methodology in new window using hash routing
+                    window.open('/ff/#/methodology', 'methodology', 'width=1200,height=800');
+                  }}
+                  className="p-2 rounded-lg bg-dark-bg hover:bg-blue-600 transition-all text-dark-text-secondary hover:text-white"
+                  title="Methodology & Calculations"
+                >
+                  <HelpCircle className="w-5 h-5" />
                 </button>
               </div>
             </div>
@@ -884,17 +947,48 @@ export function App() {
                 <div className="bg-dark-bg-secondary rounded-lg p-3 border border-dark-border">
                   <h3 className="text-sm font-semibold text-green-400 mb-2">🎯 Top Value Opportunities</h3>
                   <div className="space-y-1">
-                    {valueOpportunities.slice(0, 5).map((player) => (
-                      <div key={player.id} className="flex items-center justify-between text-xs">
-                        <span className="text-dark-text">{player.name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-blue-400">${player.intrinsicValue}</span>
-                          <span className="text-gray-500">→</span>
-                          <span className="text-orange-400">${player.marketPrice}</span>
-                          <span className="text-green-400 font-bold">+${Math.round(player.edge || 0)}</span>
+                    {valueOpportunities.slice(0, 5).map((player) => {
+                      const value = Math.round(player.intrinsicValue || 0);
+                      const price = Math.round(player.marketPrice || 0);
+                      const edge = Math.round(player.edge || 0);
+                      
+                      const valueColor = 
+                        value >= 60 ? 'text-purple-400' :
+                        value >= 40 ? 'text-indigo-400' :
+                        value >= 25 ? 'text-blue-400' :
+                        value >= 15 ? 'text-cyan-400' :
+                        value >= 8 ? 'text-teal-400' :
+                        value >= 3 ? 'text-green-400' :
+                        value >= 1 ? 'text-lime-400' :
+                        'text-gray-500';
+                      
+                      const priceColor = 
+                        price >= 60 ? 'text-red-400' :
+                        price >= 40 ? 'text-orange-400' :
+                        price >= 25 ? 'text-amber-400' :
+                        price >= 15 ? 'text-yellow-400' :
+                        price >= 8 ? 'text-yellow-500' :
+                        price >= 3 ? 'text-lime-500' :
+                        price >= 1 ? 'text-green-500' :
+                        'text-gray-500';
+                      
+                      const edgeColor = 
+                        edge >= 5 ? 'text-green-500' :
+                        edge >= 2 ? 'text-green-400' :
+                        'text-green-400';
+                      
+                      return (
+                        <div key={player.id} className="flex items-center justify-between text-xs">
+                          <span className="text-dark-text">{player.name}</span>
+                          <div className="flex items-center gap-2 font-mono">
+                            <span className={valueColor}>${value}</span>
+                            <span className="text-gray-500">→</span>
+                            <span className={priceColor}>${price}</span>
+                            <span className={`${edgeColor} font-bold`}>+${edge}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1126,7 +1220,7 @@ export function App() {
                             setShowOnlyAvailable(newState);
                             console.log('State set to:', newState);
                           }}
-                          className={`text-[8px] font-bold py-0 px-1 rounded flex-1 h-4 min-h-[1rem] bg-green-600 text-white cursor-pointer z-50 ${
+                          className={`text-[8px] font-bold py-0 px-1 rounded flex-1 h-4 min-h-[1rem] bg-green-600 text-white cursor-pointer ${
                             showOnlyAvailable 
                               ? 'opacity-100' 
                               : 'opacity-40 hover:opacity-70'
@@ -1364,7 +1458,7 @@ export function App() {
                           />
                         </th>
                         <th 
-                          className="text-left px-1 py-1 text-dark-text text-xs font-medium hover:bg-dark-bg transition-colors min-w-[300px]"
+                          className="text-left px-1 py-1 text-dark-text text-xs font-medium hover:bg-dark-bg transition-colors min-w-[150px] max-w-[180px]"
                         >
                           <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1 cursor-pointer flex-shrink-0" onClick={() => handleSort('name')}>
@@ -1547,9 +1641,9 @@ export function App() {
                               onChange={() => togglePlayerSelection(player.id)}
                             />
                           </td>
-                          <td className="px-1 py-0.5 text-dark-text text-[16px] font-medium min-w-[50px]">
+                          <td className="px-1 py-0.5 text-dark-text text-[16px] font-medium min-w-[50px] max-w-[150px]">
                             <div className="flex items-center gap-1">
-                              {player.name}
+                              <span className="truncate" title={player.name}>{player.name}</span>
                               <div className="flex items-center gap-0.5">
                                 {/* Injury Badge */}
                                 {player.injuryStatus && player.injuryStatus !== 'Healthy' && (
@@ -1649,7 +1743,7 @@ export function App() {
                           {featureFlags.useNewEvaluationSystem ? (
                             <>
                               {/* Intrinsic Value */}
-                              <td className="text-center px-0.5 py-0.5 text-[14px] font-bold w-9">
+                              <td className="text-center px-0.5 py-0.5 text-[13px] font-mono w-9">
                                 {(() => {
                                   const evaluation = improvedEvaluations.find(e => e.id === player.id);
                                   const value = evaluation?.intrinsicValue;
@@ -1668,7 +1762,7 @@ export function App() {
                                 })()}
                               </td>
                               {/* Market Price */}
-                              <td className="text-center px-0.5 py-0.5 text-[14px] w-9">
+                              <td className="text-center px-0.5 py-0.5 text-[13px] font-mono w-9">
                                 {(() => {
                                   const evaluation = improvedEvaluations.find(e => e.id === player.id);
                                   const price = evaluation?.marketPrice;
@@ -1687,7 +1781,7 @@ export function App() {
                                 })()}
                               </td>
                               {/* Edge */}
-                              <td className={`text-center px-0.5 py-0.5 text-[14px] font-bold w-9`}>
+                              <td className={`text-center px-0.5 py-0.5 text-[13px] font-mono w-9`}>
                                 {(() => {
                                   const evaluation = improvedEvaluations.find(e => e.id === player.id);
                                   if (!evaluation?.edge) return '--';
@@ -1702,7 +1796,7 @@ export function App() {
                               </td>
                             </>
                           ) : (
-                            <td className={`text-center px-0.5 py-0.5 text-[14px] font-bold w-9 ${
+                            <td className={`text-center px-0.5 py-0.5 text-[13px] font-mono w-9 ${
                               player.cvsScore >= 90 ? 'text-emerald-400' :
                               player.cvsScore >= 80 ? 'text-green-500' : 
                               player.cvsScore >= 70 ? 'text-lime-500' :
@@ -1713,8 +1807,8 @@ export function App() {
                               'text-gray-500'
                             }`}>{isNaN(player.cvsScore) ? 'N/A' : player.cvsScore.toFixed(1)}</td>
                           )}
-                          <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text w-9">{Math.round(player.projectedPoints)}</td>
-                          <td className={`text-center px-0.5 py-0.5 text-[14px] w-9 ${
+                          <td className="text-center px-0.5 py-0.5 text-[13px] text-dark-text font-mono w-9">{Math.round(player.projectedPoints)}</td>
+                          <td className={`text-center px-0.5 py-0.5 text-[13px] font-mono w-9 ${
                             (player.receptions || 0) >= 80 ? 'text-purple-400' :
                             (player.receptions || 0) >= 60 ? 'text-blue-400' :
                             (player.receptions || 0) >= 40 ? 'text-cyan-400' :
@@ -1722,7 +1816,7 @@ export function App() {
                             (player.receptions || 0) >= 10 ? 'text-gray-400' :
                             'text-gray-600'
                           }`}>+{Math.round(player.receptions || 0)}</td>
-                          <td className={`text-center px-0.5 py-0.5 text-[13px] font-bold w-11 ${
+                          <td className={`text-center px-0.5 py-0.5 text-[13px] font-mono w-11 ${
                             (player.auctionValue || 0) >= 60 ? 'text-pink-400' :
                             (player.auctionValue || 0) >= 40 ? 'text-purple-400' :
                             (player.auctionValue || 0) >= 25 ? 'text-indigo-400' :
@@ -1732,7 +1826,7 @@ export function App() {
                             (player.auctionValue || 0) >= 1 ? 'text-green-400' :
                             'text-gray-500'
                           }`}>{player.auctionValue && player.auctionValue > 0 ? `$${Math.round(player.auctionValue)}` : 'N/A'}</td>
-                          <td className={`text-center px-0.5 py-0.5 text-[13px] w-10 ${
+                          <td className={`text-center px-0.5 py-0.5 text-[13px] font-mono w-10 ${
                             player.adp <= 12 ? 'text-green-400' :
                             player.adp <= 24 ? 'text-lime-400' :
                             player.adp <= 36 ? 'text-yellow-400' :
@@ -1747,7 +1841,7 @@ export function App() {
                               {Number(player.adp).toFixed(1)}
                             </span>
                           </td>
-                          <td className="text-center px-0.5 py-0.5 text-[14px] text-dark-text-secondary w-8">
+                          <td className="text-center px-0.5 py-0.5 text-[13px] font-mono text-dark-text-secondary w-8">
                             <span className={`${
                               player.byeWeek === 5 || player.byeWeek === 6 || player.byeWeek === 7 || player.byeWeek === 9 ? 'text-orange-400' :
                               player.byeWeek === 10 || player.byeWeek === 11 || player.byeWeek === 12 || player.byeWeek === 14 ? 'text-yellow-400' :
@@ -1758,7 +1852,7 @@ export function App() {
                           </td>
                           <td className="text-center px-0.5 py-0.5 w-10">
                             {player.sos !== undefined && player.sos !== null ? (
-                              <div className={`inline-block w-7 h-5 rounded text-[11px] font-bold flex items-center justify-center ${
+                              <div className={`inline-block w-7 h-5 rounded text-[11px] font-mono flex items-center justify-center ${
                                 player.sos <= 2 ? 'bg-green-500/30 text-green-400' :
                                 player.sos <= 4 ? 'bg-green-500/20 text-green-400' :
                                 player.sos <= 6 ? 'bg-yellow-500/20 text-yellow-400' :
@@ -1810,118 +1904,11 @@ export function App() {
 
             {/* Right Sidebar - Auction Analytics & Team Budgets */}
             <div className="col-span-12 lg:col-span-2 space-y-4">
-              {/* Nomination Strategy */}
-              <div className="bg-dark-bg-secondary rounded-xl p-4 border border-dark-border">
-                <h3 className="text-sm font-semibold text-dark-text mb-3 flex items-center gap-2 cursor-help"
-                    title="Nominate players based on: 1) Overpriced players (market value > CVS value) to drain opponent budgets, 2) Players you don't want that others value highly, 3) Position runs when you're already set at that position. Formula: (Market Value - CVS Value) * Position Scarcity * Team Need Factor">
-                  <Target className="w-4 h-4 text-red-500" />
-                  Nomination Strategy
-                </h3>
-                {availablePlayers.length > 0 && (() => {
-                  try {
-                    const nominationStrategy = auctionMarketTracker.getNominationStrategy('my-team');
-                    if (!nominationStrategy || !nominationStrategy.recommendedNomination) {
-                      return <p className="text-xs text-dark-text-secondary">Loading strategy...</p>;
-                    }
-                    return (
-                      <div className="space-y-2">
-                        <div className="p-2 bg-dark-bg rounded-lg">
-                          <p className="text-xs font-medium text-dark-text">
-                            {nominationStrategy.recommendedNomination.player.name}
-                          </p>
-                          <p className="text-[10px] text-dark-text-secondary mt-1">
-                            {nominationStrategy.recommendedNomination.reason}
-                          </p>
-                          <p className="text-[10px] text-white mt-1">
-                            Expected: ${nominationStrategy.recommendedNomination.expectedPrice}
-                          </p>
-                        </div>
-                        <p className="text-[10px] text-dark-text-secondary">
-                          Phase: <span className="font-bold">{nominationStrategy.phase}</span>
-                        </p>
-                      </div>
-                    );
-                  } catch (error) {
-                    return <p className="text-xs text-dark-text-secondary">Initializing...</p>;
-                  }
-                })()}
-              </div>
-              
-              {/* Market Analysis */}
-              <div className="bg-dark-bg-secondary rounded-xl p-4 border border-dark-border">
-                <h3 className="text-sm font-semibold text-dark-text mb-3 flex items-center gap-2 cursor-help"
-                    title="Market conditions and position scarcity analysis. Inflation Rate shows if players are being overpaid (+%) or underpaid (-%). Position markets show scarcity levels and average prices.">
-                  <TrendingUp className="w-4 h-4 text-yellow-500" />
-                  Market Analysis
-                </h3>
-                
-                {/* Overall Market Stats */}
-                {marketConditions && (
-                  <div className="space-y-1 mb-3 pb-3 border-b border-dark-border">
-                    <div className="flex justify-between">
-                      <span className="text-xs text-dark-text-secondary">Inflation</span>
-                      <span className={`text-xs font-bold ${
-                        marketConditions.inflationRate > 0.1 ? 'text-red-500' :
-                        marketConditions.inflationRate < -0.1 ? 'text-green-500' :
-                        'text-yellow-500'
-                      }`}>
-                        {marketConditions.inflationRate > 0 ? '+' : ''}
-                        {(marketConditions.inflationRate * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-xs text-dark-text-secondary">Avg Price</span>
-                      <span className="text-xs font-bold text-dark-text">
-                        ${marketConditions.avgPricePerPlayer.toFixed(0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-xs text-dark-text-secondary">Total Left</span>
-                      <span className="text-xs font-bold text-dark-text">
-                        ${marketConditions.totalRemaining}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Position Markets */}
-                <div className="space-y-2">
-                  {positionMarkets && positionMarkets.length > 0 ? positionMarkets.map(market => {
-                    const getScarcityColor = (level: string) => {
-                      switch(level) {
-                        case 'critical': return 'text-red-500 bg-red-500/10';
-                        case 'scarce': return 'text-orange-500 bg-orange-500/10';
-                        case 'normal': return 'text-yellow-500 bg-yellow-500/10';
-                        case 'abundant': return 'text-green-500 bg-green-500/10';
-                        default: return 'text-gray-500 bg-gray-500/10';
-                      }
-                    };
-                    return (
-                      <div key={market.position} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-bold px-1 py-0.5 rounded bg-position-${market.position.toLowerCase()} text-white`}>
-                            {market.position}
-                          </span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${getScarcityColor(market.scarcityLevel)}`}>
-                            {market.scarcityLevel.charAt(0).toUpperCase() + market.scarcityLevel.slice(1)}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs font-bold text-dark-text">
-                            ${market.avgPrice.toFixed(0)} <span className={`text-[10px] ${
-                              market.inflationRate > 0 ? 'text-red-500' : 'text-green-500'
-                            }`}>
-                              ({market.inflationRate > 0 ? '+' : ''}{(market.inflationRate * 100).toFixed(0)}%)
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  }) : (
-                    <p className="text-[10px] text-dark-text-secondary">Loading market data...</p>
-                  )}
-                </div>
-              </div>
+              {/* Critical Moments & Position Scarcity - Combined */}
+              <CriticalMoments 
+                moments={dashboardData.criticalMoments} 
+                scarcity={dashboardData.positionScarcity} 
+              />
               
               {/* Draft History - Recent Picks */}
               {draftHistory.length > 0 && (
@@ -2564,7 +2551,7 @@ export function App() {
 
       {/* Methodology Documentation - Now opens in new window */}
 
-      {/* Settings Modal */}
+      {/* Settings Modal - DISABLED: Using standard 12-team PPR ESPN auction settings
       {showSettings && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="max-w-4xl w-full mx-4">
@@ -2578,6 +2565,7 @@ export function App() {
           </div>
         </div>
       )}
+      */}
 
       {/* Player Comparison Modal - Draggable */}
       {showComparisonModal && (
