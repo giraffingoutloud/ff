@@ -25,7 +25,6 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
         className="w-full flex items-center gap-2 p-3 bg-dark-bg-secondary rounded-lg hover:bg-dark-bg-tertiary transition-colors"
       >
         {expandedSections.has(id) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-        {icon}
         <span className="font-semibold text-dark-text">{title}</span>
       </button>
       {expandedSections.has(id) && (
@@ -40,7 +39,7 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
     <div className="mb-2">
       <span className="text-draft-primary font-medium">{label}:</span>
       <span className="text-dark-text-secondary ml-2">{source}</span>
-      {file && <div className="text-xs text-dark-text-tertiary ml-4">📁 {file}</div>}
+      {file && <div className="text-xs text-dark-text-tertiary ml-4">{file}</div>}
     </div>
   );
 
@@ -191,7 +190,7 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
                 </div>
               </div>
               
-              <h4 className="font-semibold text-dark-text mt-6">📈 Dynamic Updates During Draft</h4>
+              <h4 className="font-semibold text-dark-text mt-6">Dynamic Updates During Draft</h4>
               <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 mt-2">
                 <p className="text-sm text-dark-text-secondary mb-2">
                   Intrinsic values recalculate after each pick:
@@ -252,7 +251,7 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
                 </div>
               </div>
               
-              <h4 className="font-semibold text-dark-text mt-6">📈 Dynamic Updates During Draft</h4>
+              <h4 className="font-semibold text-dark-text mt-6">Dynamic Updates During Draft</h4>
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mt-2">
                 <p className="text-sm text-dark-text-secondary mb-2">
                   Market prices adjust in real-time based on draft flow:
@@ -281,27 +280,41 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
                 Edge% = ((Intrinsic Value - Market Price) / Market Price) × 100
               </Formula>
 
-              <h4 className="font-semibold text-dark-text mt-4">Recommendation Thresholds</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-green-400">Strong Buy:</span>
-                  <span>Edge ≥ +20%</span>
+              <h4 className="font-semibold text-dark-text mt-4">Recommendation Thresholds (Price-Tiered)</h4>
+              <div className="space-y-3">
+                <div className="text-sm text-dark-text-secondary mb-2">Thresholds adjust based on player price:</div>
+                
+                <div className="bg-dark-bg-secondary p-2 rounded">
+                  <div className="text-xs font-semibold text-dark-text mb-1">Cheap Players ($1-3):</div>
+                  <div className="text-xs space-y-1 ml-2">
+                    <div>Strong Buy: Edge ≥ +30%</div>
+                    <div>Buy: Edge ≥ +15%</div>
+                    <div>Hold: -15% to +15%</div>
+                    <div>Avoid: Edge ≤ -15%</div>
+                    <div>Strong Avoid: Edge ≤ -30%</div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-green-400">Buy:</span>
-                  <span>Edge ≥ +8%</span>
+                
+                <div className="bg-dark-bg-secondary p-2 rounded">
+                  <div className="text-xs font-semibold text-dark-text mb-1">Mid-Range Players ($4-30):</div>
+                  <div className="text-xs space-y-1 ml-2">
+                    <div>Strong Buy: Edge ≥ +20%</div>
+                    <div>Buy: Edge ≥ +8%</div>
+                    <div>Hold: -8% to +8%</div>
+                    <div>Avoid: Edge ≤ -8%</div>
+                    <div>Strong Avoid: Edge ≤ -20%</div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Fair Value:</span>
-                  <span>-8% &lt; Edge &lt; +8%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-red-400">Avoid:</span>
-                  <span>Edge ≤ -8%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-red-400">Strong Avoid:</span>
-                  <span>Edge ≤ -15%</span>
+                
+                <div className="bg-dark-bg-secondary p-2 rounded">
+                  <div className="text-xs font-semibold text-dark-text mb-1">Expensive Players ($30+):</div>
+                  <div className="text-xs space-y-1 ml-2">
+                    <div>Strong Buy: Edge ≥ +15%</div>
+                    <div>Buy: Edge ≥ +6%</div>
+                    <div>Hold: -6% to +6%</div>
+                    <div>Avoid: Edge ≤ -6%</div>
+                    <div>Strong Avoid: Edge ≤ -15%</div>
+                  </div>
                 </div>
               </div>
 
@@ -375,7 +388,7 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
                   <strong className="text-dark-text">Position Value Curve Exponents</strong>
                   <p className="text-sm">Based on historical tier analysis:</p>
                   <ul className="list-disc list-inside ml-4 text-sm">
-                    <li>TE: 1.3 - Steepest dropoff (Kelce → others)</li>
+                    <li>TE: 1.3 - Steepest dropoff (elite tier gap)</li>
                     <li>RB: 1.25 - Elite backs win leagues</li>
                     <li>WR: 1.15 - Moderate curve, deeper position</li>
                     <li>QB: 1.1 - Shallow curve, position is deep</li>
@@ -386,9 +399,9 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
                   <strong className="text-dark-text">Budget Caps (% of $200 budget)</strong>
                   <p className="text-sm">Maximum realistic spend per position:</p>
                   <ul className="list-disc list-inside ml-4 text-sm">
-                    <li>RB: 50% ($100) - CMC historical max ~40%</li>
-                    <li>WR: 45% ($90) - Elite WRs max ~35%</li>
-                    <li>TE: 35% ($70) - Kelce max ~30%</li>
+                    <li>RB: 50% ($100) - Elite RBs historically ~35-40%</li>
+                    <li>WR: 45% ($90) - Top WRs historically ~30-35%</li>
+                    <li>TE: 35% ($70) - Top TEs historically ~25-30%</li>
                     <li>QB: 30% ($60) - 40% in SuperFlex</li>
                     <li>K/DST: 3-4% ($6-8) - Never overpay</li>
                   </ul>
@@ -396,13 +409,13 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
 
                 <div>
                   <strong className="text-dark-text">Recommendation Thresholds</strong>
-                  <p className="text-sm">Based on historical value capture analysis:</p>
+                  <p className="text-sm">Price-tiered thresholds based on value capture analysis:</p>
                   <ul className="list-disc list-inside ml-4 text-sm">
-                    <li>Strong Buy: ≥20% edge - Significant value</li>
-                    <li>Buy: ≥8% edge - Good value</li>
-                    <li>Fair: -8% to +8% - Market value</li>
-                    <li>Avoid: ≤-8% - Overpriced</li>
+                    <li>Cheap ($1-3): ±30% / ±15% thresholds</li>
+                    <li>Mid-range ($4-30): ±20% / ±8% thresholds</li>
+                    <li>Expensive ($30+): ±15% / ±6% thresholds</li>
                   </ul>
+                  <p className="text-xs text-dark-text-tertiary mt-1">Higher percentage needed for cheap players to be meaningful</p>
                 </div>
               </div>
 
@@ -451,18 +464,18 @@ export const MethodologyDocs: React.FC<MethodologyDocsProps> = ({ onClose }) => 
                 <div className="bg-dark-bg-secondary p-3 rounded-lg">
                   <strong className="text-draft-primary">For Value Hunting:</strong>
                   <ul className="text-sm mt-2 space-y-1">
-                    <li>• Sort by Edge%</li>
-                    <li>• Look for +15% or higher</li>
-                    <li>• Verify with CWE score</li>
+                    <li>Sort by Edge%</li>
+                    <li>Look for +15% or higher</li>
+                    <li>Verify with CWE score</li>
                   </ul>
                 </div>
                 
                 <div className="bg-dark-bg-secondary p-3 rounded-lg">
                   <strong className="text-draft-primary">For Safe Picks:</strong>
                   <ul className="text-sm mt-2 space-y-1">
-                    <li>• Sort by Confidence</li>
-                    <li>• Require 70%+ confidence</li>
-                    <li>• Accept lower edge (8-15%)</li>
+                    <li>Sort by Confidence</li>
+                    <li>Require 70%+ confidence</li>
+                    <li>Accept lower edge (8-15%)</li>
                   </ul>
                 </div>
               </div>
