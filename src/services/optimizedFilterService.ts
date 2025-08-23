@@ -138,8 +138,8 @@ class OptimizedFilterService {
         
         if (tableViewMode === 'BUYS') {
           return playerEval.valueRecommendation === 'strong-buy' || 
-                 (playerEval.edge && playerEval.edge > 10 && 
-                  playerEval.edgePercent && playerEval.edgePercent > 15);
+                 (playerEval.edge && playerEval.edge > 15 && 
+                  playerEval.edgePercent && playerEval.edgePercent > 25);
         } else if (tableViewMode === 'TRAPS') {
           return playerEval.valueRecommendation === 'strong-avoid' || 
                  (playerEval.edge && playerEval.edge < -5 && 

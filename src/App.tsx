@@ -1200,7 +1200,7 @@ export function App() {
                                 ? 'bg-green-600 text-white'
                                 : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
                             }`}
-                            title="Best values: Strong-buy or 15%+ edge"
+                            title="Best values: Strong-buy or $15+ edge with 25%+ return"
                           >
                             BEST VALUES
                           </button>
@@ -1256,7 +1256,7 @@ export function App() {
                             }
                             setSelectedPositions(newSelection);
                           }}
-                          className={`text-sm xl:text-base font-bold py-1 xl:py-1.5 px-1.5 xl:px-2 rounded flex-1 h-6 xl:h-8 min-h-[1.5rem] bg-position-${position.toLowerCase()} text-white cursor-pointer ${
+                          className={`text-xs xl:text-sm font-bold py-0.5 xl:py-1 px-1 xl:px-1.5 rounded flex-1 h-5 xl:h-6 min-h-[1.25rem] bg-position-${position.toLowerCase()} text-white cursor-pointer ${
                             selectedPositions.has(position)
                               ? 'opacity-100'
                               : 'opacity-40 hover:opacity-70'
@@ -1283,7 +1283,7 @@ export function App() {
                           setShowOnlyAvailable(newState);
                           console.log('State set to:', newState);
                         }}
-                        className={`text-sm xl:text-base font-bold py-1 xl:py-1.5 px-1.5 xl:px-2 rounded flex-1 h-6 xl:h-8 min-h-[1.5rem] bg-green-600 text-white cursor-pointer ${
+                        className={`text-xs xl:text-sm font-bold py-0.5 xl:py-1 px-1 xl:px-1.5 rounded flex-1 h-5 xl:h-6 min-h-[1.25rem] bg-green-600 text-white cursor-pointer ${
                           showOnlyAvailable 
                             ? 'opacity-100' 
                             : 'opacity-40 hover:opacity-70'
@@ -2113,7 +2113,7 @@ export function App() {
                             ) : (
                               <>
                                 <span 
-                                  className="text-xs font-semibold text-dark-text cursor-help"
+                                  className="text-sm font-semibold text-dark-text cursor-help"
                                   title={team.roster.length > 0 
                                     ? `Roster (${team.roster.length}):\n${team.roster.map(p => 
                                         `• ${p.name} (${p.position}) - $${(p as any).purchasePrice || p.auctionValue || 1}`
