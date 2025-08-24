@@ -435,7 +435,7 @@ export function App() {
   const initializeApp = async () => {
     console.log('initializeApp called - starting load');
     setIsLoading(true);
-    setLoadingStage('Initializing draft settings...');
+    setLoadingStage('Initializing draft settings');
     
     try {
       
@@ -453,7 +453,7 @@ export function App() {
       // Try to load from database first, but don't fail if it errors
       let loadedPlayers: Player[] = [];
       
-      setLoadingStage('Loading player database...');
+      setLoadingStage('Loading player database');
       await new Promise(resolve => setTimeout(resolve, 300));
       setLoadingProgress(45);
       try {
@@ -465,7 +465,7 @@ export function App() {
       
       if (loadedPlayers.length === 0) {
         // Force fresh load
-        setLoadingStage('Loading player data from CSV files...');
+        setLoadingStage('Loading player data from CSV files');
         await new Promise(resolve => setTimeout(resolve, 300));
         setLoadingProgress(60);
         improvedCanonicalService.reset();
@@ -476,7 +476,7 @@ export function App() {
         }
       } else {
         // Still initialize canonical service for real-time updates
-        setLoadingStage('Checking for player updates...');
+        setLoadingStage('Checking for player updates');
         await new Promise(resolve => setTimeout(resolve, 300));
         setLoadingProgress(60);
         improvedCanonicalService.initialize().catch(err => 
@@ -485,13 +485,13 @@ export function App() {
       }
       
       // Calculate CVS scores
-      setLoadingStage('Calculating player values...');
+      setLoadingStage('Calculating player values');
       await new Promise(resolve => setTimeout(resolve, 300));
       setLoadingProgress(75);
       loadedPlayers = dynamicCVSCalculator.calculateBulkCVS(loadedPlayers);
       
       // Extend players with PPR and advanced metrics
-      setLoadingStage('Analyzing PPR adjustments...');
+      setLoadingStage('Analyzing PPR adjustments');
       
       // Process in chunks to prevent blocking
       const extended: ModernExtendedPlayer[] = [];
@@ -520,7 +520,7 @@ export function App() {
         
         // Update loading progress
         const progress = 75 + Math.round(((i + chunkSize) / loadedPlayers.length) * 20);
-        setLoadingStage(`Analyzing players... ${Math.min(Math.round(((i + chunkSize) / loadedPlayers.length) * 100), 100)}%`);
+        setLoadingStage(`Analyzing players: ${Math.min(Math.round(((i + chunkSize) / loadedPlayers.length) * 100), 100)}%`);
         setLoadingProgress(Math.min(progress, 95));
       }
       
@@ -536,7 +536,7 @@ export function App() {
       // Auction tracker initialized in useEffect to prevent duplication
       
       // Save to database in background (don't wait)
-      setLoadingStage('Saving to database...');
+      setLoadingStage('Saving to database');
       playerDB.bulkUpsert(loadedPlayers).catch(err => 
         console.warn('Failed to save to database:', err)
       );
@@ -547,7 +547,7 @@ export function App() {
         console.log('First extended player:', extended[0]);
       }
       
-      setLoadingStage('Finalizing...');
+      setLoadingStage('Finalizing');
       setPlayers(extended);
       console.log('Set players in store:', extended.length);
       
@@ -991,6 +991,15 @@ export function App() {
             </div>
             
             <div className="flex items-center space-x-4">
+              {/* Lineup Optimizer Button */}
+              <a
+                href="#/lineup-optimizer"
+                className="px-4 py-2 rounded-lg bg-draft-primary hover:bg-blue-700 transition-all text-white font-medium text-sm"
+                title="Weekly Lineup Optimizer"
+              >
+                Lineup Optimizer
+              </a>
+              
               {/* Methodology Button - Moved to right side */}
               <button
                 onClick={() => setShowMethodology(true)}
